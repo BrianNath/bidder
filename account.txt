@@ -1,0 +1,15 @@
+pocketbase
+email: bidderadmin@gmail.com
+password: BidderAdmin!
+
+admin
+username: master_admin
+password: admin123
+
+seller1
+username: seller_1
+password: seller123
+
+buyer1
+username: buyer_1
+password: buyer1234
