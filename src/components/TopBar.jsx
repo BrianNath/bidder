@@ -1,13 +1,39 @@
 import { useRouter } from "next/router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import fetchApi from "@/utils/fetchApi";
+import UnauthorizedModal from "@/components/UnauthorizedModal";
 
 export default function TopBar({ children }) {
   const [ddIsOpen, setDDIsOpen] = useState(false);
+  const [userInformation, setUserInformation] = useState({});
+  const [avatar, setAvatar] = useState("");
   const router = useRouter();
+  const [openUnauthorizedModal, setOpenUnauthorizedModal] = useState(false);
 
   function toggleDD() {
     setDDIsOpen((isOpen) => !isOpen);
+  }
+
+  function showDialog() {
+    setOpenUnauthorizedModal(true);
+  }
+
+  async function findSelfUserById() {
+    const payload = {
+      url: "/api/users/find-self-user-by-id",
+      method: "GET",
+      body: {},
+    };
+    const fetch = await fetchApi(payload);
+    // console.log("FETCH : ", fetch);
+
+    if (fetch.status == 401) {
+      return showDialog();
+    } else {
+      localStorage.setItem("userData", JSON.stringify(fetch.record));
+      setUserInformation(JSON.parse(localStorage.userData));
+      return;
+    }
   }
 
   async function logout() {
@@ -20,12 +46,32 @@ export default function TopBar({ children }) {
     console.log("FETCH:", fetch);
     if (fetch.isOk) {
       localStorage.removeItem("authToken");
+      localStorage.removeItem("userData");
       router.push("/authentication/login");
     }
   }
 
+  function getUserAvatar() {
+    const userName = userInformation.name || "";
+    const initials = userName
+      .split(" ")
+      .map((word) => word.charAt(0))
+      .join("")
+      .toUpperCase();
+    setAvatar(initials);
+  }
+
+  useEffect(() => {
+    findSelfUserById();
+  }, []);
+
+  useEffect(() => {
+    getUserAvatar();
+  }, [userInformation]);
+
   return (
     <>
+      <UnauthorizedModal isOpen={openUnauthorizedModal} />
       <nav className="bg-gray-800">
         <div className="mx-auto max-w-7xl px-2 sm:px-6 lg:px-8">
           <div className="relative flex h-16 items-center justify-between">
@@ -137,11 +183,35 @@ export default function TopBar({ children }) {
                     aria-haspopup="true"
                   >
                     <span className="sr-only">Open user menu</span>
-                    <img
-                      className="h-8 w-8 rounded-full"
-                      src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
-                      alt=""
-                    />
+
+                    {userInformation?.name ? (
+                      <div className="avatar placeholder">
+                        <div className="bg-neutral-focus text-neutral-content rounded-full w-8">
+                          <span className="text-xs">{avatar}</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="avatar placeholder">
+                        <div className="bg-neutral-focus text-neutral-content rounded-full w-8">
+                          <span className="text-xs">
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              strokeWidth={1.5}
+                              stroke="currentColor"
+                              className="w-5 h-5"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"
+                              />
+                            </svg>
+                          </span>
+                        </div>
+                      </div>
+                    )}
                   </button>
                 </div>
 

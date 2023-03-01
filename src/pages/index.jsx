@@ -1,35 +1,13 @@
 import fetchApi from "@/utils/fetchApi";
-import UnauthorizedModal from "@/components/UnauthorizedModal";
 import { useEffect, useState } from "react";
 import TopBar from "@/components/TopBar";
 import Breadcrumb from "@/components/Breadcrumb";
 import ItemCard from "@/components/ItemCard";
 
 function Home() {
-  const [openUnauthorizedModal, setOpenUnauthorizedModal] = useState(false);
   const [auctionList, setAuctionList] = useState([]);
   // const [offset, setOffset] = useState(5);
   // const userData = JSON.parse(localStorage.userData);
-
-  function showDialog() {
-    setOpenUnauthorizedModal(true);
-  }
-
-  async function findSelfUserById() {
-    const payload = {
-      url: "/api/users/find-self-user-by-id",
-      method: "GET",
-      body: {},
-    };
-    const fetch = await fetchApi(payload);
-    // console.log("FETCH : ", fetch);
-
-    if (fetch.status == 401) {
-      return showDialog();
-    } else {
-      return localStorage.setItem("userData", JSON.stringify(fetch.record));
-    }
-  }
 
   async function getAuctionsLazy() {
     const payload = {
@@ -67,7 +45,7 @@ function Home() {
   }
 
   useEffect(() => {
-    findSelfUserById();
+    // findSelfUserById();
     getAuctionsLazy();
   }, []);
 
@@ -84,13 +62,7 @@ function Home() {
           <Breadcrumb />
         </div>
 
-        <UnauthorizedModal isOpen={openUnauthorizedModal} />
-
         <div className="my-2 flex gap-4">
-          <button className="btn" onClick={findSelfUserById}>
-            find Self User By Id
-          </button>
-
           <button className="btn" onClick={getAuctionsLazy}>
             Get Auction Lazy
           </button>

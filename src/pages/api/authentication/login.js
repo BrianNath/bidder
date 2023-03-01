@@ -13,6 +13,10 @@ export default async function login(req, res) {
       .collection("users")
       .authWithPassword(username, password);
 
+    console.log(req.body);
+    console.log(authData);
+    console.log(pb.authStore.isValid);
+
     if (pb.authStore.isValid) {
       const token = jwt.sign(
         { userId: authData.record.id },
@@ -22,12 +26,13 @@ export default async function login(req, res) {
           algorithm: "HS256",
         }
       );
-
+      console.log("TOKEN", token);
       res.setHeader("Set-Cookie", `authToken=${token}; Path=/`);
 
       res.status(200).json({ token, isOk: true });
     }
   } catch (error) {
+    console.log("ERROR");
     res.status(401).json({ error });
   }
 }
