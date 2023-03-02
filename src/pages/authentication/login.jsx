@@ -1,6 +1,7 @@
 import fetchApi from "@/utils/fetchApi";
 import { useRouter } from "next/router";
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { pbErrorMapper } from "@/lib/pocketbase";
 
 async function authenticate(body) {
   const payload = {
@@ -9,15 +10,15 @@ async function authenticate(body) {
     body,
   };
   const response = await fetchApi(payload);
+  // console.log("RESPONSE: ", response);
   if (response.isOk) {
     localStorage.setItem("authToken", `${response.token}`);
-    return true;
+    return { success: true };
   }
-  return false;
+  return { success: false, error: response.error.data.message };
 }
 
 export default function Login() {
-  const router = useRouter();
   const [site, setSite] = useState("login");
 
   return (
@@ -33,7 +34,11 @@ export default function Login() {
 
 function LoginComponent({ changeSite }) {
   const router = useRouter();
+  const [onLoading, setOnLoading] = useState(false);
+  const [showError, setShowError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
   const handleLogin = async (event) => {
+    setOnLoading(true);
     event.preventDefault();
 
     const body = {
@@ -41,213 +46,321 @@ function LoginComponent({ changeSite }) {
       password: event.target.password.value,
     };
 
-    let loginSuccess = await authenticate(body);
+    let { success, error } = await authenticate(body);
 
-    if (loginSuccess) {
+    if (success) {
       router.push("/");
+      setOnLoading(false);
+    } else {
+      console.log("ERROR:", error);
+      setErrorMessage(error);
+      setShowError(true);
+      setOnLoading(false);
     }
   };
   return (
-    <div className="m-auto pb-20 h-screen">
-      <div className="flex min-h-full items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-        <div className="w-full max-w-md space-y-8">
-          <div>
-            <img
-              className="mx-auto h-12 w-auto"
-              src="https://tailwindui.com/img/logos/mark.svg?color=indigo&shade=600"
-              alt="Your Company"
-            />
-            <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900">
-              Sign in to your account
-            </h2>
-            <p className="mt-2 text-center text-sm text-gray-600">
-              Or
-              <a
-                onClick={changeSite}
-                className="font-medium text-indigo-600 hover:text-indigo-500 ml-1 cursor-pointer"
-              >
-                Register
-              </a>
-            </p>
-          </div>
-          <form className="mt-8 space-y-6" onSubmit={handleLogin}>
-            <input type="hidden" name="remember" value="true" />
-            <div className="-space-y-px rounded-md shadow-sm">
-              <div>
-                <label htmlFor="username" className="sr-only">
-                  Username
-                </label>
-                <input
-                  id="username"
-                  name="username"
-                  type="username"
-                  autoComplete="username"
-                  required
-                  className="relative block w-full appearance-none border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
-                  placeholder="Username"
-                />
-              </div>
-              <div>
-                <label htmlFor="password" className="sr-only">
-                  Password
-                </label>
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  autoComplete="current-password"
-                  required
-                  className="relative block w-full appearance-none rounded-none rounded-b-md border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
-                  placeholder="Password"
-                />
-              </div>
-            </div>
-
-            {/* <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <input
-                  id="remember-me"
-                  name="remember-me"
-                  type="checkbox"
-                  className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                />
-                <label
-                  htmlFor="remember-me"
-                  className="ml-2 block text-sm text-gray-900"
-                >
-                  Remember me
-                </label>
-              </div>
-            </div> */}
-
-            <div>
-              <button
-                type="submit"
-                className="group relative flex w-full justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-              >
-                <span className="absolute inset-y-0 left-0 flex items-center pl-3">
-                  <svg
-                    className="h-5 w-5 text-indigo-500 group-hover:text-indigo-400"
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                    aria-hidden="true"
+    <>
+      <section className="bg-gray-50">
+        <div className="flex flex-col items-center justify-center px-6 py-8 mx-auto md:h-screen lg:py-0">
+          <div className="w-full bg-white rounded-lg shadow md:mt-0 sm:max-w-md xl:p-0">
+            <div className="p-6 space-y-4 md:space-y-6 sm:p-8">
+              <h1 className="text-xl font-bold leading-tight tracking-tight text-gray-900 md:text-2xl">
+                Sign in to your account
+              </h1>
+              {showError ? (
+                <div className="alert alert-error shadow-lg text-white bg-red-500">
+                  <div className="flex justify-between w-full">
+                    <span className="ml-2">{errorMessage}</span>
+                    <svg
+                      onClick={() => setShowError(false)}
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="stroke-current cursor-pointer h-6 w-6 mr-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
+                    </svg>
+                  </div>
+                </div>
+              ) : (
+                ""
+              )}
+              <form className="space-y-4 md:space-y-6" onSubmit={handleLogin}>
+                <div>
+                  <label
+                    htmlFor="username"
+                    className="block mb-2 text-sm font-medium text-gray-900"
                   >
-                    <path
-                      fillRule="evenodd"
-                      d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                </span>
-                Sign in
-              </button>
+                    Username
+                  </label>
+                  <input
+                    id="username"
+                    name="username"
+                    type="username"
+                    autoComplete="username"
+                    placeholder="Your Username"
+                    required
+                    className="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5"
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="password"
+                    className="block mb-2 text-sm font-medium text-gray-900"
+                  >
+                    Password
+                  </label>
+                  <input
+                    id="password"
+                    name="password"
+                    type="password"
+                    required
+                    placeholder="********"
+                    className="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5"
+                  />
+                </div>
+                {!onLoading ? (
+                  <button type="submit" className="w-full btn">
+                    Sign in
+                  </button>
+                ) : (
+                  <button className="w-full btn btn-disabled loading font-medium rounded-lg text-sm" />
+                )}
+                <p className="text-sm font-light text-gray-500">
+                  Don&prime;t have an account yet?
+                  <a
+                    onClick={changeSite}
+                    className="font-medium cursor-pointer text-primary-600 hover:underline ml-1"
+                  >
+                    Sign up
+                  </a>
+                </p>
+              </form>
             </div>
-          </form>
+          </div>
         </div>
-      </div>
-    </div>
+      </section>
+    </>
   );
 }
 
 function RegisterComponent({ changeSite }) {
   const router = useRouter();
+  const [errorMessage, setErrorMessage] = useState({});
+  const [showError, setShowError] = useState(false);
+  const [onLoading, setOnLoading] = useState(false);
+
   const handleRegister = async (event) => {
+    setOnLoading(true);
     event.preventDefault();
 
     const body = {
       username: event.target.username.value,
+      email: event.target.email.value,
       password: event.target.password.value,
+      passwordConfirm: event.target.confirmPassword.value,
+      name: event.target.name.value,
+      emailVisibility: true,
+      roleId: ["1t9yhssk9ivw8od"],
     };
 
-    // let loginSuccess = await authenticate(body);
+    const payload = {
+      method: "POST",
+      url: "/api/authentication/register",
+      body,
+    };
+    const response = await fetchApi(payload);
 
-    // if (loginSuccess) {
-    //   router.push("/");
-    // }
+    // console.log("RESPONSE: ", response);
+
+    if (!response.isOk) {
+      const error = pbErrorMapper(response);
+      // console.log("ERROR: ", error);
+      setShowError(true);
+      setErrorMessage(error.errorLabel);
+    } else {
+      let { success, error } = await authenticate({
+        username: body.username,
+        password: body.password,
+      });
+
+      if (success) {
+        router.push("/");
+        setOnLoading(false);
+      } else {
+        console.log("ERROR:", error);
+        setErrorMessage(error);
+        setShowError(true);
+        setOnLoading(false);
+      }
+    }
   };
   return (
-    <div className="m-auto pb-20 h-screen">
-      <div className="flex min-h-full items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-        <div className="w-full max-w-md space-y-8">
-          <div>
-            <img
-              className="mx-auto h-12 w-auto"
-              src="https://tailwindui.com/img/logos/mark.svg?color=indigo&shade=600"
-              alt="Your Company"
-            />
-            <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900">
-              Sign up to your account
-            </h2>
-            <p className="mt-2 text-center text-sm text-gray-600">
-              Or
-              <a
-                onClick={changeSite}
-                className="font-medium text-indigo-600 hover:text-indigo-500 ml-1 cursor-pointer"
+    <>
+      <section className="bg-gray-50">
+        <div className="flex flex-col items-center justify-center px-6 py-8 mx-auto min-h-screen">
+          <div className="w-full bg-white rounded-lg shadow md:mt-0 sm:max-w-md xl:p-0">
+            <div className="p-6 space-y-4 md:space-y-6 sm:p-8">
+              <h1 className="text-xl font-bold leading-tight tracking-tight text-gray-900 md:text-2xl">
+                Create new account
+              </h1>
+              {showError ? (
+                <div className="alert alert-error shadow-lg text-white bg-red-500">
+                  <div className="flex justify-between w-full">
+                    <div className="ml-2 space-y-2 text-sm">
+                      {Object.keys(errorMessage).map(function (key) {
+                        return (
+                          <div key={key}>
+                            <span className="font-medium">
+                              {key.toUpperCase()}
+                            </span>
+                            {Object.keys(errorMessage[key]).map(function (
+                              error
+                            ) {
+                              return (
+                                <li key={errorMessage[key].message}>
+                                  {errorMessage[key][error]}
+                                </li>
+                              );
+                            })}
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <svg
+                      onClick={() => setShowError(false)}
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="stroke-current cursor-pointer h-6 w-6 mr-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
+                    </svg>
+                  </div>
+                </div>
+              ) : (
+                ""
+              )}
+              <form
+                className="space-y-4 md:space-y-6"
+                onSubmit={handleRegister}
               >
-                Login
-              </a>
-            </p>
-          </div>
-          <form className="mt-8 space-y-6" onSubmit={handleRegister}>
-            <input type="hidden" name="remember" value="true" />
-            <div className="-space-y-px rounded-md shadow-sm">
-              <div>
-                <label htmlFor="username" className="sr-only">
-                  Username
-                </label>
-                <input
-                  id="username"
-                  name="username"
-                  type="username"
-                  autoComplete="username"
-                  required
-                  className="relative block w-full appearance-none border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
-                  placeholder="Username"
-                />
-              </div>
-              <div>
-                <label htmlFor="password" className="sr-only">
-                  Password
-                </label>
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  autoComplete="current-password"
-                  required
-                  className="relative block w-full appearance-none border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
-                  placeholder="Password"
-                />
-              </div>
-            </div>
-
-            <div>
-              <button
-                type="submit"
-                className="group relative flex w-full justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-              >
-                <span className="absolute inset-y-0 left-0 flex items-center pl-3">
-                  <svg
-                    className="h-5 w-5 text-indigo-500 group-hover:text-indigo-400"
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                    aria-hidden="true"
+                <div>
+                  <label
+                    htmlFor="name"
+                    className="block mb-2 text-sm font-medium text-gray-900"
                   >
-                    <path
-                      fillRule="evenodd"
-                      d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                </span>
-                Sign up
-              </button>
+                    Name
+                  </label>
+                  <input
+                    id="name"
+                    name="name"
+                    type="text"
+                    autoComplete="name"
+                    placeholder="John Doe"
+                    required
+                    className="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5"
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="username"
+                    className="block mb-2 text-sm font-medium text-gray-900"
+                  >
+                    Username
+                    <span className="ml-1 text-gray-300">ex : john_doe23</span>
+                  </label>
+                  <input
+                    pattern="[a-zA-Z0-9_]+"
+                    id="username"
+                    name="username"
+                    type="text"
+                    autoComplete="username"
+                    placeholder="Your_Username"
+                    required
+                    className="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5"
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="email"
+                    className="block mb-2 text-sm font-medium text-gray-900"
+                  >
+                    Email
+                  </label>
+                  <input
+                    id="email"
+                    name="email"
+                    type="email"
+                    autoComplete="email"
+                    placeholder="you@mail.com"
+                    required
+                    className="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5"
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="password"
+                    className="block mb-2 text-sm font-medium text-gray-900"
+                  >
+                    Password
+                  </label>
+                  <input
+                    id="password"
+                    name="password"
+                    type="password"
+                    required
+                    placeholder="********"
+                    className="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5"
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="confirmPassword"
+                    className="block mb-2 text-sm font-medium text-gray-900"
+                  >
+                    Confirm Password
+                  </label>
+                  <input
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    type="password"
+                    required
+                    placeholder="********"
+                    className="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5"
+                  />
+                </div>
+                {!onLoading ? (
+                  <button type="submit" className="w-full btn">
+                    Sign up
+                  </button>
+                ) : (
+                  <button className="w-full btn btn-disabled loading font-medium rounded-lg text-sm" />
+                )}
+                <p className="text-sm font-light text-gray-500">
+                  Already have an account?
+                  <a
+                    onClick={changeSite}
+                    className="font-medium cursor-pointer text-primary-600 hover:underline ml-1"
+                  >
+                    Sign In
+                  </a>
+                </p>
+              </form>
             </div>
-          </form>
+          </div>
         </div>
-      </div>
-    </div>
+      </section>
+    </>
   );
 }

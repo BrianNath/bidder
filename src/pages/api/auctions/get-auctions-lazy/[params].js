@@ -20,7 +20,7 @@ async function getAuctionsLazy(req, res) {
         .json({ error: { message: "Not Found Record" }, isOk: false });
     }
   } catch (error) {
-    res.status(401).json({ error, isOk: false });
+    res.json({ error, isOk: false });
   }
 }
 

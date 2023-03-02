@@ -4,11 +4,13 @@ import fetchApi from "@/utils/fetchApi";
 import UnauthorizedModal from "@/components/UnauthorizedModal";
 
 export default function TopBar({ children }) {
+  const router = useRouter();
   const [ddIsOpen, setDDIsOpen] = useState(false);
+  const [openUnauthorizedModal, setOpenUnauthorizedModal] = useState(false);
   const [userInformation, setUserInformation] = useState({});
   const [avatar, setAvatar] = useState("");
-  const router = useRouter();
-  const [openUnauthorizedModal, setOpenUnauthorizedModal] = useState(false);
+  const [name, setName] = useState("");
+  const [role, setRole] = useState("");
 
   function toggleDD() {
     setDDIsOpen((isOpen) => !isOpen);
@@ -31,7 +33,7 @@ export default function TopBar({ children }) {
       return showDialog();
     } else {
       localStorage.setItem("userData", JSON.stringify(fetch.record));
-      setUserInformation(JSON.parse(localStorage.userData));
+      setUserInformation(fetch.record);
       return;
     }
   }
@@ -51,7 +53,7 @@ export default function TopBar({ children }) {
     }
   }
 
-  function getUserAvatar() {
+  function getUserProfile() {
     const userName = userInformation.name || "";
     const initials = userName
       .split(" ")
@@ -59,6 +61,8 @@ export default function TopBar({ children }) {
       .join("")
       .toUpperCase();
     setAvatar(initials);
+    setName(userName);
+    // setRole(user.);
   }
 
   useEffect(() => {
@@ -66,7 +70,7 @@ export default function TopBar({ children }) {
   }, []);
 
   useEffect(() => {
-    getUserAvatar();
+    getUserProfile();
   }, [userInformation]);
 
   return (
