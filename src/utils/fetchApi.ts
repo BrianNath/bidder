@@ -13,7 +13,7 @@ interface Payload {
 }
 
 export default async function fetchApi(payload: Payload) {
-  const { url, method, body } = payload;
+  const { url, method, body = {} } = payload;
 
   // Logger(payload);
   const jwtToken = localStorage.getItem("authToken");
@@ -37,11 +37,10 @@ export default async function fetchApi(payload: Payload) {
   } else {
     requestOptions.body = JSON.stringify(body);
   }
-  
+
   const response = await fetch(url, requestOptions).then((response) => {
     return response.json();
   });
-
 
   Logger(response);
   return response;

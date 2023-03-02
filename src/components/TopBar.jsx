@@ -22,9 +22,8 @@ export default function TopBar({ children }) {
 
   async function findSelfUserById() {
     const payload = {
-      url: "/api/users/find-self-user-by-id",
+      url: "/api/user/find-self-user-by-id",
       method: "GET",
-      body: {},
     };
     const fetch = await fetchApi(payload);
     // console.log("FETCH : ", fetch);

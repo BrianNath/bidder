@@ -11,10 +11,10 @@ function Home() {
 
   async function getAuctionsLazy() {
     const payload = {
-      url: "/api/auctions/get-auctions-lazy/0.20",
+      url: "/api/auction/get-auctions-lazy/0.20",
       method: "GET",
-      body: {},
     };
+    
     const fetch = await fetchApi(payload);
 
     if (fetch.isOk) {
@@ -27,6 +27,8 @@ function Home() {
   }
 
   function filterAuction(auctionData) {
+    // console.log("AUCTION DATA:", auctionData);
+    const id = auctionData.id;
     const creatorName = auctionData.expand.bidderId.name;
     const category = auctionData.expand.categoryId.map((v) => v.categoryName);
     const title = auctionData.expand.itemId.title;
@@ -39,6 +41,7 @@ function Home() {
       title,
       openPrice,
       timeStart,
+      id,
     };
 
     return filteredAuctionData;
@@ -49,9 +52,9 @@ function Home() {
     getAuctionsLazy();
   }, []);
 
-  useEffect(() => {
-    console.log("auctionList : ", auctionList);
-  }, [auctionList]);
+  // useEffect(() => {
+  //   console.log("auctionList : ", auctionList);
+  // }, [auctionList]);
 
   return (
     <>
@@ -80,6 +83,7 @@ function Home() {
             return (
               <ItemCard
                 key={index}
+                id={auction.id}
                 category={auction.category}
                 creatorName={auction.creatorName}
                 title={auction.title}

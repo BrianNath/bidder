@@ -1,13 +1,21 @@
 import React from "react";
 import { formatIDR } from "@/utils/numbering";
+import { useRouter } from "next/router";
 
-function ItemCard({ creatorName, category, title, openPrice, timeStart }) {
-  console.log("PROPS:", { creatorName, category, title, openPrice, timeStart });
+function ItemCard({ id, creatorName, category, title, openPrice, timeStart }) {
+  // console.log("PROPS:", { creatorName, category, title, openPrice, timeStart });
+  const router = useRouter();
+
+  function handleClick() {
+    router.push(`/auction/${id}`);
+  }
+
   return (
     <div className="w-56 rounded-lg drop-shadow-md bg-white">
       <img
         src="/iphonex.jpg"
         alt=""
+        onClick={handleClick}
         className="object-cover rounded-t-lg cursor-pointer h-48"
       />
       <div className="px-3 py-2">
@@ -35,8 +43,11 @@ function ItemCard({ creatorName, category, title, openPrice, timeStart }) {
             {creatorName ? creatorName : "(Unknown)"}
           </button>
         </div>
-        <button className="my-3 btn rounded-full w-full btn-outline">
-          See Item
+        <button
+          onClick={handleClick}
+          className="my-3 btn rounded-full w-full btn-outline"
+        >
+          Auction Details
         </button>
       </div>
     </div>
