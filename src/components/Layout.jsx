@@ -1,6 +1,8 @@
 import React from "react";
 
 import Head from "next/head";
+import TopBar from "@/components/TopBar";
+import Breadcrumb from "@/components/Breadcrumb";
 
 export default function Layout({ children }) {
   return (
@@ -11,7 +13,11 @@ export default function Layout({ children }) {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      {children}
+      <TopBar />
+      <div className="w-7/12 m-auto mt-4">
+        <Breadcrumb />
+      </div>
+      <main className="w-full lg:w-9/12 m-auto mt-4 lg:px-0 px-4">{children}</main>
     </React.Fragment>
   );
 }

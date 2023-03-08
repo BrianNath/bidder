@@ -1,46 +1,111 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { formatIDR } from "@/utils/numbering";
+import { useRouter } from "next/router";
+import fetchApi from "@/utils/fetchApi";
 
-function ItemCard({ creatorName, category, title, openPrice, timeStart }) {
-  console.log("PROPS:", { creatorName, category, title, openPrice, timeStart });
+function ItemCard({
+  creatorName,
+  category,
+  title,
+  openPrice,
+  timeStart,
+  id,
+  status,
+}) {
+  // console.log("PROPS:", { creatorName, category, title, openPrice, timeStart, id });
+  const router = useRouter();
+  const [imageUrl, setImageUrl] = useState("/no-image.png");
+  const [redirectLoading, setRedirectLoading] = useState(false);
+
+  async function getImageURL() {
+    const options = { thumb: "150x300" };
+    const payload = {
+      url: `/api/item/get-item-img-url-by-auction-id/${id}?options=${JSON.stringify(
+        options
+      )}`,
+      method: "GET",
+    };
+    const fetch = await fetchApi(payload);
+    console.log("FETCH:", fetch);
+    if (fetch.isOk) {
+      setImageUrl(fetch.url);
+    }
+  }
+
+  function handleClick() {
+    setRedirectLoading(true);
+    router.push(`/auction/${id}`);
+  }
+
+  useEffect(() => {
+    getImageURL();
+  }, [imageUrl]);
+
   return (
     <div className="w-56 rounded-lg drop-shadow-md bg-white">
       <img
-        src="/iphonex.jpg"
+        onClick={handleClick}
+        src={imageUrl}
         alt=""
-        className="object-cover rounded-t-lg cursor-pointer h-48"
+        className="object-cover rounded-t-lg cursor-pointer h-48 w-56"
       />
       <div className="px-3 py-2">
-        <p className="line-clamp-2 max-h-16">{title ? title : "(Empty)"}</p>
-        <p className="font-bold mt-1">
+        <p className="truncate overflow-hidden max-h-24 leading-6">
+          {title ? title : "(Empty)"}
+        </p>
+        <p className="font-bold mt-1 truncate overflow-hidden max-h-24 leading-6">
           Start Bid: {openPrice >= 0 ? formatIDR(openPrice) : "-"}
         </p>
         <div className="flex items-center mt-1 font-medium text-sm">
-          {/* <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth={1.5}
-            stroke="currentColor"
-            className="w-4 h-4"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"
-            />
-          </svg>
-          <span className="">:</span> */}
           <button className="text-gray-500 hover:text-gray-800 cursor-pointer">
             {creatorName ? creatorName : "(Unknown)"}
           </button>
         </div>
-        <button className="my-3 btn rounded-full w-full btn-outline">
+        <button
+          onClick={handleClick}
+          className={`my-3 btn rounded-full w-full btn-outline ${
+            redirectLoading ? "loading" : ""
+          }`}
+        >
           See Item
         </button>
       </div>
     </div>
   );
+}
+
+function StatusBadge({ status }) {
+  if (status == "Ongoing") {
+    return (
+      <div className="bg-blue-600 text-center hover:bg-blue-700 rounded-full px-3 font-medium text-white text-sm py-2">
+        Sedang Berlangsung
+      </div>
+    );
+  } else if (status == "Done") {
+    return (
+      <div className="bg-green-600 text-center hover:bg-green-700 rounded-full px-3 font-medium text-white text-sm py-2">
+        Selesai
+      </div>
+    );
+  } else if (status == "Canceled") {
+    return (
+      <div className="bg-red-600 text-center hover:bg-red-700 rounded-full px-3 font-medium text-white text-sm py-2">
+        Dibatalkan
+      </div>
+    );
+  } else if (status == "Waiting") {
+    return (
+      <div className="bg-yellow-600 text-center hover:bg-yellow-700 rounded-full px-3 font-medium text-white text-sm py-2">
+        Menunggu
+      </div>
+    );
+  } else {
+    return (
+      <div className="bg-gray-600 text-center hover:bg-gray-700 rounded-full px-3 font-medium text-white text-sm py-2">
+        {status}
+      </div>
+    );
+  }
 }
 
 export default ItemCard;

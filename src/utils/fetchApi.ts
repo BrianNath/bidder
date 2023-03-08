@@ -1,5 +1,3 @@
-import { useRouter } from "next/router";
-
 export function Logger(message: any) {
   if (process.env.NODE_ENV == "development") {
     console.log("FROM LOGGER = ", message);
@@ -37,11 +35,10 @@ export default async function fetchApi(payload: Payload) {
   } else {
     requestOptions.body = JSON.stringify(body);
   }
-  
+
   const response = await fetch(url, requestOptions).then((response) => {
     return response.json();
   });
-
 
   Logger(response);
   return response;

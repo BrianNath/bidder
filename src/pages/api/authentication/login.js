@@ -13,9 +13,9 @@ export default async function login(req, res) {
       .collection("users")
       .authWithPassword(username, password);
 
-    console.log(req.body);
-    console.log(authData);
-    console.log(pb.authStore.isValid);
+    // console.log(req.body);
+    // console.log(authData);
+    // console.log(pb.authStore.isValid);
 
     if (pb.authStore.isValid) {
       const token = jwt.sign(
@@ -32,7 +32,9 @@ export default async function login(req, res) {
       res.status(200).json({ token, isOk: true });
     }
   } catch (error) {
-    console.log("ERROR");
-    res.status(401).json({ error });
+    res.status(400).json({
+      error,
+      isOk: false,
+    });
   }
 }

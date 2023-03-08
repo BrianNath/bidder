@@ -5,8 +5,7 @@ import { useRouter } from "next/router";
 function UnauthorizedModal({ isOpen }) {
   const router = useRouter();
   function handleCloseModal() {
-    isOpen = false;
-    router.push("/authentication/login");
+    router.push("/authentication");
   }
 
   useEffect(() => {

@@ -10,7 +10,7 @@ export const authComponent = (WrappedComponent) => {
       const authHeader = localStorage.getItem("authToken");
       const token = authHeader && authHeader.split(" ")[1];
       if (!token) {
-        router.push("/authentication/login");
+        router.push("/authentication");
       } else {
         try {
           console.log("TOKEN: ",token)
@@ -18,7 +18,7 @@ export const authComponent = (WrappedComponent) => {
           props.user = decoded;
         } catch (err) {
           console.error(err);
-          router.push("/authentication/login");
+          router.push("/authentication");
         }
       }
     }, []);

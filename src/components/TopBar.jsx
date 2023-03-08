@@ -2,18 +2,50 @@ import { useRouter } from "next/router";
 import { useState, useEffect } from "react";
 import fetchApi from "@/utils/fetchApi";
 import UnauthorizedModal from "@/components/UnauthorizedModal";
+import getUserAvatar from "@/utils/getUserAvatar";
+import Link from "next/link";
 
-export default function TopBar({ children }) {
+export default function TopBar() {
   const router = useRouter();
+  // const location = useLocation();
+
+  const routes = [
+    {
+      name: "Dashboard",
+      href: "/",
+    },
+    {
+      name: "Auction",
+      href: "/auction",
+    },
+    {
+      name: "User",
+      href: "/user",
+    },
+    {
+      name: "Sell",
+      href: "/sell",
+    },
+    {
+      name: "Item",
+      href: "/item",
+    },
+  ];
+
   const [ddIsOpen, setDDIsOpen] = useState(false);
   const [openUnauthorizedModal, setOpenUnauthorizedModal] = useState(false);
   const [userInformation, setUserInformation] = useState({});
   const [avatar, setAvatar] = useState("");
+  const [showMenu, setShowMenu] = useState(false);
   const [name, setName] = useState("");
   const [role, setRole] = useState("");
 
   function toggleDD() {
     setDDIsOpen((isOpen) => !isOpen);
+  }
+
+  function toggleMenu() {
+    setShowMenu((isOpen) => !isOpen);
   }
 
   function showDialog() {
@@ -22,7 +54,7 @@ export default function TopBar({ children }) {
 
   async function findSelfUserById() {
     const payload = {
-      url: "/api/users/find-self-user-by-id",
+      url: "/api/user/find-user-by-id",
       method: "GET",
       body: {},
     };
@@ -49,24 +81,21 @@ export default function TopBar({ children }) {
     if (fetch.isOk) {
       localStorage.removeItem("authToken");
       localStorage.removeItem("userData");
-      router.push("/authentication/login");
+      router.push("/authentication");
     }
   }
 
   function getUserProfile() {
-    const userName = userInformation.name || "";
-    const initials = userName
-      .split(" ")
-      .map((word) => word.charAt(0))
-      .join("")
-      .toUpperCase();
-    setAvatar(initials);
+    const userName = userInformation?.name || "";
+    const userAvatar = getUserAvatar(userName);
+    setAvatar(userAvatar);
     setName(userName);
     // setRole(user.);
   }
 
   useEffect(() => {
     findSelfUserById();
+    console.log(router);
   }, []);
 
   useEffect(() => {
@@ -81,12 +110,12 @@ export default function TopBar({ children }) {
           <div className="relative flex h-16 items-center justify-between">
             <div className="absolute inset-y-0 left-0 flex items-center sm:hidden">
               <button
+                onClick={toggleMenu}
                 type="button"
                 className="inline-flex items-center justify-center rounded-md p-2 text-gray-400 hover:bg-gray-700 hover:text-white focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
                 aria-controls="mobile-menu"
                 aria-expanded="false"
               >
-                <span className="sr-only">Open main menu</span>
                 <svg
                   className="block h-6 w-6"
                   fill="none"
@@ -123,34 +152,45 @@ export default function TopBar({ children }) {
               </div>
               <div className="hidden sm:ml-6 sm:block">
                 <div className="flex space-x-4">
-                  <a
-                    href=""
-                    className="bg-gray-900 text-white px-3 py-2 rounded-md text-sm font-medium"
-                    aria-current="page"
-                  >
-                    Dashboard
-                  </a>
-
-                  <a
-                    href=""
-                    className="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
-                  >
-                    Sell
-                  </a>
-
-                  <a
-                    href=""
-                    className="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
-                  >
-                    Users
-                  </a>
-
-                  <a
-                    href=""
-                    className="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
-                  >
-                    Auctions
-                  </a>
+                  {routes.map((route) => {
+                    if (route.href !== "/") {
+                      return router.asPath.startsWith(route.href) ? (
+                        <Link
+                          key={route.name}
+                          href={route.href}
+                          className="bg-gray-900 text-white px-3 py-2 rounded-md text-sm font-medium"
+                        >
+                          {route.name}
+                        </Link>
+                      ) : (
+                        <Link
+                          key={route.name}
+                          href={route.href}
+                          className="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
+                        >
+                          {route.name}
+                        </Link>
+                      );
+                    } else {
+                      return router.asPath === "/" ? (
+                        <Link
+                          key={route.name}
+                          href="/"
+                          className="bg-gray-900 text-white px-3 py-2 rounded-md text-sm font-medium"
+                        >
+                          Dashboard
+                        </Link>
+                      ) : (
+                        <Link
+                          key={route.name}
+                          href="/"
+                          className="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
+                        >
+                          Dashboard
+                        </Link>
+                      );
+                    }
+                  })}
                 </div>
               </div>
             </div>
@@ -159,27 +199,24 @@ export default function TopBar({ children }) {
                 type="button"
                 className="rounded-full bg-gray-800 p-1 text-gray-400 hover:text-white focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800"
               >
-                <span className="sr-only">View notifications</span>
                 <svg
-                  className="h-6 w-6"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth="1.5"
-                  stroke="currentColor"
-                  aria-hidden="true"
+                  onClick={() => router.push("/setting")}
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                  className="w-5 h-5"
                 >
                   <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"
+                    fillRule="evenodd"
+                    d="M7.84 1.804A1 1 0 018.82 1h2.36a1 1 0 01.98.804l.331 1.652a6.993 6.993 0 011.929 1.115l1.598-.54a1 1 0 011.186.447l1.18 2.044a1 1 0 01-.205 1.251l-1.267 1.113a7.047 7.047 0 010 2.228l1.267 1.113a1 1 0 01.206 1.25l-1.18 2.045a1 1 0 01-1.187.447l-1.598-.54a6.993 6.993 0 01-1.929 1.115l-.33 1.652a1 1 0 01-.98.804H8.82a1 1 0 01-.98-.804l-.331-1.652a6.993 6.993 0 01-1.929-1.115l-1.598.54a1 1 0 01-1.186-.447l-1.18-2.044a1 1 0 01.205-1.251l1.267-1.114a7.05 7.05 0 010-2.227L1.821 7.773a1 1 0 01-.206-1.25l1.18-2.045a1 1 0 011.187-.447l1.598.54A6.993 6.993 0 017.51 3.456l.33-1.652zM10 13a3 3 0 100-6 3 3 0 000 6z"
+                    clipRule="evenodd"
                   />
                 </svg>
               </button>
 
-              <div className="relative ml-3">
+              <div onClick={toggleDD} className="relative ml-3">
                 <div>
                   <button
-                    onClick={toggleDD}
                     type="button"
                     className="flex rounded-full bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800"
                     id="user-menu-button"
@@ -220,8 +257,8 @@ export default function TopBar({ children }) {
                 </div>
 
                 <div
-                  className={`absolute right-0 mt-2 w-40 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10 transition-all duration-300 ease-in-out ${
-                    ddIsOpen ? "" : "opacity-0 translate-y-1"
+                  className={`absolute right-0 mt-2 w-40 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10 ${
+                    ddIsOpen ? "visible" : "hidden"
                   }`}
                   id="menu"
                   aria-labelledby="menu-button"
@@ -249,34 +286,6 @@ export default function TopBar({ children }) {
                       />
                     </svg>
                     Profiles
-                  </button>
-                  <button
-                    href=""
-                    className="px-4 py-3 w-full text-sm text-gray-700 flex gap-2 font-medium bg-white hover:bg-gray-200"
-                    role="menuitem"
-                    tabIndex="-1"
-                    id="user-menu-item-0"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      strokeWidth="1.5"
-                      stroke="currentColor"
-                      className="w-5 h-5"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z"
-                      />
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                      />
-                    </svg>
-                    Settings
                   </button>
                   <button
                     href=""
@@ -308,36 +317,47 @@ export default function TopBar({ children }) {
           </div>
         </div>
 
-        <div className="sm:hidden" id="mobile-menu">
+        <div className={`${showMenu ? "visible" : "hidden"}`} id="mobile-menu">
           <div className="space-y-1 px-2 pt-2 pb-3">
-            <a
-              href=""
-              className="bg-gray-900 text-white block px-3 py-2 rounded-md text-base font-medium"
-              aria-current="page"
-            >
-              Dashboard
-            </a>
-
-            <a
-              href=""
-              className="text-gray-300 hover:bg-gray-700 hover:text-white block px-3 py-2 rounded-md text-base font-medium"
-            >
-              Team
-            </a>
-
-            <a
-              href=""
-              className="text-gray-300 hover:bg-gray-700 hover:text-white block px-3 py-2 rounded-md text-base font-medium"
-            >
-              Projects
-            </a>
-
-            <a
-              href=""
-              className="text-gray-300 hover:bg-gray-700 hover:text-white block px-3 py-2 rounded-md text-base font-medium"
-            >
-              Calendar
-            </a>
+            {routes.map((route) => {
+              if (route.href !== "/") {
+                return router.asPath.startsWith(route.href) ? (
+                  <Link
+                    key={route.name}
+                    href={route.href}
+                    className="bg-gray-900 block text-white px-3 py-2 rounded-md text-sm font-medium"
+                  >
+                    {route.name}
+                  </Link>
+                ) : (
+                  <Link
+                    key={route.name}
+                    href={route.href}
+                    className="text-gray-300 block hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
+                  >
+                    {route.name}
+                  </Link>
+                );
+              } else {
+                return router.asPath === "/" ? (
+                  <Link
+                    key={route.name}
+                    href="/"
+                    className="bg-gray-900 block text-white px-3 py-2 rounded-md text-sm font-medium"
+                  >
+                    Dashboard
+                  </Link>
+                ) : (
+                  <Link
+                    key={route.name}
+                    href="/"
+                    className="text-gray-300 block hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
+                  >
+                    Dashboard
+                  </Link>
+                );
+              }
+            })}
           </div>
         </div>
       </nav>
