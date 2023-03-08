@@ -56,7 +56,6 @@ export default function TopBar() {
     const payload = {
       url: "/api/user/find-user-by-id",
       method: "GET",
-      body: {},
     };
     const fetch = await fetchApi(payload);
     // console.log("FETCH : ", fetch);

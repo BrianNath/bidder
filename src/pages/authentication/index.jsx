@@ -187,7 +187,7 @@ function RegisterComponent({ changeSite }) {
 
     const payload = {
       method: "POST",
-      url: "/api/authentication/register",
+      url: "/api/user/register",
       body,
     };
     const response = await fetchApi(payload);

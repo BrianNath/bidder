@@ -11,7 +11,7 @@ interface Payload {
 }
 
 export default async function fetchApi(payload: Payload) {
-  const { url, method, body } = payload;
+  const { url, method, body = {} } = payload;
 
   // Logger(payload);
   const jwtToken = localStorage.getItem("authToken");
