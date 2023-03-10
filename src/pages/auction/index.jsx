@@ -12,13 +12,13 @@ function Auction() {
   async function getAuctionsLazy() {
     setAuctionListLoading(true);
     const payload = {
-      url: "/api/auction/get-auctions-lazy/0.20",
+      url: "/api/auctions/get-auctions-lazy/0.20",
       method: "GET",
     };
     const fetch = await fetchApi(payload);
 
     if (fetch.isOk) {
-      // console.log("FETCH : ", fetch.record.items);
+      console.log("FETCH : ", fetch.record.items);
       const filteredList = fetch.record.items.map((v) => {
         return filterAuction(v);
       });
@@ -30,7 +30,7 @@ function Auction() {
 
   function filterAuction(auctionData) {
     const creatorName = auctionData.expand.creatorId.name;
-    const category = auctionData.expand.categoryId.categoryName;
+    const category = auctionData.expand.itemId.expand.categoryId.categoryName;
     const title = auctionData.expand.itemId.title;
     const openPrice = auctionData.expand.itemId.openPrice;
     const timeStart = auctionData.timeStart;
@@ -56,7 +56,7 @@ function Auction() {
 
   return (
     <>
-      <div className="flex gap-6">
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
         {auctionListLoading ? (
           <div className="mt-3 justify-evenly w-full flex">
             <CardAuctionSkeleton />

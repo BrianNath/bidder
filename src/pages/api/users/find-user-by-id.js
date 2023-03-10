@@ -1,11 +1,10 @@
 import pb from "@/lib/pocketbase";
 import authMiddlewareApi from "@/middleware/authMiddlewareApi";
 
-async function findAuctionById(req, res) {
-  const { id } = req.query;
+async function findSelfUserById(req, res) {
   try {
-    const record = await pb.collection("auctions").getOne(id, {
-      expand: "creatorId,itemId,operatorUserId,categoryId,winnerId",
+    const record = await pb.collection("users").getOne(req.user.userId, {
+      expand: "roleId",
     });
 
     if (record) {
@@ -16,8 +15,8 @@ async function findAuctionById(req, res) {
         .json({ error: { message: "Not Found Record" }, isOk: false });
     }
   } catch (error) {
-    res.json({ error, isOk: false });
+    res.status(404).json({ error, isOk: false });
   }
 }
 
-export default authMiddlewareApi(findAuctionById);
+export default authMiddlewareApi(findSelfUserById);

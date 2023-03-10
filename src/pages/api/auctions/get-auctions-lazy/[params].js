@@ -9,7 +9,7 @@ async function getAuctionsLazy(req, res) {
   try {
     const record = await pb.collection("auctions").getList(offset, limit, {
       filter: "",
-      expand: "creatorId,categoryId,itemId",
+      expand: "creatorId,itemId,itemId.categoryId",
     });
 
     if (record) {

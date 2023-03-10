@@ -23,7 +23,7 @@ const authMiddlewareApi =
       return handler({ ...req, user: decoded }, res);
     } catch (err) {
       res.status(401).json({ message: "Unauthorized JWT", status: 401 });
-      return;
+      return err;
     }
   };
 

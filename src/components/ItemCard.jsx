@@ -20,7 +20,7 @@ function ItemCard({
   async function getImageURL() {
     const options = { thumb: "150x300" };
     const payload = {
-      url: `/api/item/get-item-img-url-by-auction-id/${id}?options=${JSON.stringify(
+      url: `/api/items/get-item-img-url-by-auction-id/${id}?options=${JSON.stringify(
         options
       )}`,
       method: "GET",
@@ -42,14 +42,19 @@ function ItemCard({
   }, [imageUrl]);
 
   return (
-    <div className="w-56 rounded-lg drop-shadow-md bg-white">
+    <div className="w-full rounded-lg drop-shadow-md bg-white relative">
+      <StatusBadge status={status} />
+      {/* <span className="text-sm font-medium rounded-full py-1 px-2 bg-red-500 absolute right-2 top-2 text-white">
+        Sedang Berlangsung
+      </span> */}
       <img
         onClick={handleClick}
         src={imageUrl}
         alt=""
-        className="object-cover rounded-t-lg cursor-pointer h-48 w-56"
+        className="object-cover rounded-t-lg cursor-pointer h-48 w-full"
       />
       <div className="px-3 py-2">
+        <StatusBadge status={status} />
         <p className="truncate overflow-hidden max-h-24 leading-6">
           {title ? title : "(Empty)"}
         </p>
@@ -77,31 +82,31 @@ function ItemCard({
 function StatusBadge({ status }) {
   if (status == "Ongoing") {
     return (
-      <div className="bg-blue-600 text-center hover:bg-blue-700 rounded-full px-3 font-medium text-white text-sm py-2">
+      <div className="bg-blue-200 text-blue-700 text-sm font-bold rounded-full py-1 px-2 absolute right-2 top-2">
         Sedang Berlangsung
       </div>
     );
   } else if (status == "Done") {
     return (
-      <div className="bg-green-600 text-center hover:bg-green-700 rounded-full px-3 font-medium text-white text-sm py-2">
+      <div className="bg-green-200 text-green-700 text-sm font-bold rounded-full py-1 px-2 absolute right-2 top-2">
         Selesai
       </div>
     );
   } else if (status == "Canceled") {
     return (
-      <div className="bg-red-600 text-center hover:bg-red-700 rounded-full px-3 font-medium text-white text-sm py-2">
+      <div className="bg-red-200 text-red-700 text-sm font-bold rounded-full py-1 px-2 absolute right-2 top-2">
         Dibatalkan
       </div>
     );
   } else if (status == "Waiting") {
     return (
-      <div className="bg-yellow-600 text-center hover:bg-yellow-700 rounded-full px-3 font-medium text-white text-sm py-2">
+      <div className="bg-yellow-200 text-yellow-700 text-sm font-bold rounded-full py-1 px-2 absolute right-2 top-2">
         Menunggu
       </div>
     );
   } else {
     return (
-      <div className="bg-gray-600 text-center hover:bg-gray-700 rounded-full px-3 font-medium text-white text-sm py-2">
+      <div className="bg-gray-200 text-gray-700 text-sm font-bold rounded-full py-1 px-2 absolute right-2 top-2">
         {status}
       </div>
     );

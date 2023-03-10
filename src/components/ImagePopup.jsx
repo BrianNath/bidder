@@ -11,7 +11,7 @@ const ImagePopup = ({ imageUrl, onClose, isOpen }) => {
         exit={{ opacity: 0 }}
       >
         <motion.div
-          className="relative w-full max-w-3xl h-full overflow-hidden"
+          className="relative w-8/12 h-8/12"
           initial={{ y: "100%" }}
           animate={{ y: 0 }}
           exit={{ y: "100%" }}

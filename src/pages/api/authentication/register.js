@@ -8,7 +8,7 @@ export default async function register(req, res) {
     } else {
       res
         .status(400)
-        .json({ error: { message: "Not Found Record" }, isOk: false });
+        .json({ error: { message: "Error Register" }, isOk: false });
     }
   } catch (error) {
     res.json({ error, isOk: false });

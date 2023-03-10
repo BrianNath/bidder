@@ -11,23 +11,23 @@ export default function TopBar() {
 
   const routes = [
     {
-      name: "Dashboard",
+      name: "Halaman Utama",
       href: "/",
     },
     {
-      name: "Auction",
+      name: "Lelang",
       href: "/auction",
     },
     {
-      name: "User",
+      name: "Pengguna",
       href: "/user",
     },
     {
-      name: "Sell",
+      name: "Jual",
       href: "/sell",
     },
     {
-      name: "Item",
+      name: "Barang",
       href: "/item",
     },
   ];
@@ -54,7 +54,7 @@ export default function TopBar() {
 
   async function findSelfUserById() {
     const payload = {
-      url: "/api/user/find-user-by-id",
+      url: "/api/users/find-user-by-id",
       method: "GET",
     };
     const fetch = await fetchApi(payload);
@@ -62,7 +62,7 @@ export default function TopBar() {
 
     if (fetch.status == 401) {
       return showDialog();
-    } else {
+    } else if (fetch.isOk) {
       localStorage.setItem("userData", JSON.stringify(fetch.record));
       setUserInformation(fetch.record);
       return;
@@ -177,7 +177,7 @@ export default function TopBar() {
                           href="/"
                           className="bg-gray-900 text-white px-3 py-2 rounded-md text-sm font-medium"
                         >
-                          Dashboard
+                          Dasbor
                         </Link>
                       ) : (
                         <Link
@@ -185,7 +185,7 @@ export default function TopBar() {
                           href="/"
                           className="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
                         >
-                          Dashboard
+                          Dasbor
                         </Link>
                       );
                     }
@@ -194,25 +194,6 @@ export default function TopBar() {
               </div>
             </div>
             <div className="absolute inset-y-0 right-0 flex items-center pr-2 sm:static sm:inset-auto sm:ml-6 sm:pr-0">
-              <button
-                type="button"
-                className="rounded-full bg-gray-800 p-1 text-gray-400 hover:text-white focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800"
-              >
-                <svg
-                  onClick={() => router.push("/setting")}
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                  className="w-5 h-5"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M7.84 1.804A1 1 0 018.82 1h2.36a1 1 0 01.98.804l.331 1.652a6.993 6.993 0 011.929 1.115l1.598-.54a1 1 0 011.186.447l1.18 2.044a1 1 0 01-.205 1.251l-1.267 1.113a7.047 7.047 0 010 2.228l1.267 1.113a1 1 0 01.206 1.25l-1.18 2.045a1 1 0 01-1.187.447l-1.598-.54a6.993 6.993 0 01-1.929 1.115l-.33 1.652a1 1 0 01-.98.804H8.82a1 1 0 01-.98-.804l-.331-1.652a6.993 6.993 0 01-1.929-1.115l-1.598.54a1 1 0 01-1.186-.447l-1.18-2.044a1 1 0 01.205-1.251l1.267-1.114a7.05 7.05 0 010-2.227L1.821 7.773a1 1 0 01-.206-1.25l1.18-2.045a1 1 0 011.187-.447l1.598.54A6.993 6.993 0 017.51 3.456l.33-1.652zM10 13a3 3 0 100-6 3 3 0 000 6z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </button>
-
               <div onClick={toggleDD} className="relative ml-3">
                 <div>
                   <button
@@ -263,6 +244,21 @@ export default function TopBar() {
                   aria-labelledby="menu-button"
                   role="menu"
                 >
+                  {userInformation?.name ? (
+                    <div className="flex w-full justify-start items-center gap-2 p-2 border-b ">
+                      <div className="avatar placeholder">
+                        <div className="bg-neutral-focus text-neutral-content rounded-full w-8">
+                          <span className="text-xs">{avatar}</span>
+                        </div>
+                      </div>
+                      <div className="font-medium text-sm">
+                        <div>{userInformation.name}</div>
+                        <div className="text-sm text-gray-500">
+                          {userInformation.expand.roleId.roleName}
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
                   <button
                     href=""
                     className="px-4 py-3 w-full text-sm text-gray-700 flex gap-2 font-medium bg-white hover:bg-gray-200 rounded-t-md"
@@ -344,7 +340,7 @@ export default function TopBar() {
                     href="/"
                     className="bg-gray-900 block text-white px-3 py-2 rounded-md text-sm font-medium"
                   >
-                    Dashboard
+                    Dasbor
                   </Link>
                 ) : (
                   <Link
@@ -352,7 +348,7 @@ export default function TopBar() {
                     href="/"
                     className="text-gray-300 block hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
                   >
-                    Dashboard
+                    Dasbor
                   </Link>
                 );
               }

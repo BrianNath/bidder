@@ -5,7 +5,7 @@ async function getAllRolesRegister(req, res) {
   try {
     const record = await pb
       .collection("roles")
-      .getFullList(200, { filter: "roleName != 'administrator'" });
+      .getFullList(200, { filter: "roleName != 'officer'" });
 
     if (record) {
       res.status(200).json({ record, isOk: true });

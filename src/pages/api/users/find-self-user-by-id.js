@@ -15,7 +15,7 @@ async function findSelfUserById(req, res) {
         .json({ error: { message: "Not Found Record" }, isOk: false });
     }
   } catch (error) {
-    res.status(401).json({ error, isOk: false });
+    res.status(404).json({ error, isOk: false });
   }
 }
 

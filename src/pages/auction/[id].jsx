@@ -4,8 +4,9 @@ import { useState, useEffect } from "react";
 import getUserAvatar from "@/utils/getUserAvatar";
 import { formatIDR } from "@/utils/numbering";
 import { timeAgo } from "@/utils/date";
-import { motion, AnimatePresence } from "framer-motion";
 import ImagePopup from "@/components/ImagePopup";
+import OffersDialog from "@/components/OffersDialog";
+import executeAtTime from "@/utils/executeAtTime";
 
 export default function AuctionDetails() {
   const router = useRouter();
@@ -17,15 +18,17 @@ export default function AuctionDetails() {
   const [winnerAuction, setWinnerAuction] = useState({});
   const [offersList, setOffersList] = useState([]);
   const [onLoading, setOnLoading] = useState(true);
-  const [richText, setRichText] = useState("");
   const [imgUrl, setImgUrl] = useState("");
   const [offersDialogOpen, setOffersDialogOpen] = useState(false);
   const [openPopUp, setOpenPopUp] = useState(false);
+  const [userData, setUserData] = useState({});
+  const [offerBid, setOfferBid] = useState(0);
+  const [auctionData, setAuctionData] = useState({});
 
   async function getImageURL() {
     const options = { thumb: "150x300" };
     const payload = {
-      url: `/api/item/get-item-img-url-by-auction-id/${id}?options=${JSON.stringify(
+      url: `/api/items/get-item-img-url-by-auction-id/${id}?options=${JSON.stringify(
         options
       )}`,
       method: "GET",
@@ -38,11 +41,12 @@ export default function AuctionDetails() {
 
   async function getDetailsById() {
     const payload = {
-      url: `/api/auction/${id}`,
+      url: `/api/auctions/${id}`,
       method: "GET",
     };
     const fetch = await fetchApi(payload);
     // console.log("FETCH:", fetch);
+    setAuctionData(fetch.record);
     if (fetch.isOk) {
       const dataNeeded = neededDetailsData(fetch.record);
       setAuctionDetails(dataNeeded);
@@ -53,24 +57,39 @@ export default function AuctionDetails() {
     setOnLoading(false);
   }
 
+  function handleBidOffer(event) {
+    !event.target.value ? (event.target.value = "0") : null;
+    const rawValue = event.target.value.replace(/[^\d]/g, "");
+    const formattedValue = parseInt(rawValue).toLocaleString();
+    setOfferBid(formattedValue);
+  }
+
   async function getOffersByAuctionId() {
     const payload = {
-      url: `/api/auction/get-offers-by-auction-id/${id}`,
+      url: `/api/auctions/get-offers-by-auction-id/${id}`,
       method: "GET",
     };
     const fetch = await fetchApi(payload);
     if (fetch.isOk) {
       const neededData = fetch.record.map((offer) => neededOffersData(offer));
-      console.log("NEEDED OFFERS DATA = ", neededData);
+      // console.log("NEEDED OFFERS DATA = ", neededData);
       setOffersList(neededData);
       setWinnerAuction(neededData[0]);
       const winnerName = neededData[0]?.name;
       setWinnerAvatar(getUserAvatar(winnerName ? winnerName : ""));
+
+      //   if (auctionDetails.status == "Waiting") {
+      //     startAuction();
+      //   }
+
+      //   if (auctionDetails.status == "Ongoing") {
+      //     closeAuction();
+      //   }
     }
   }
 
   function neededOffersData(offersRecord) {
-    console.log("OFFERS RECORD = ", offersRecord);
+    // console.log("OFFERS RECORD = ", offersRecord);
     const name = offersRecord.expand.bidderId.name;
     const priceOffered = offersRecord.priceOffered;
     const offeredTime = Date.parse(offersRecord.created);
@@ -91,13 +110,20 @@ export default function AuctionDetails() {
     const condition = detailsRecord.expand.itemId.condition;
     const quantity = detailsRecord.expand.itemId.quantity;
     const description = detailsRecord.expand.itemId.description;
-    const categoryName = detailsRecord.expand.categoryId.categoryName;
+    const categoryName =
+      detailsRecord.expand.itemId.expand.categoryId.categoryName;
     const creatorName = detailsRecord.expand.creatorId.name;
     const openPrice = detailsRecord.expand.itemId.openPrice;
+    const timeEnd = Date.parse(detailsRecord.timeEnd);
+    const timeStart = Date.parse(detailsRecord.timeStart);
     const createdAt = Date.parse(detailsRecord.timeStart);
     const status = detailsRecord.status;
+    const id = detailsRecord.id;
 
     return {
+      timeEnd,
+      timeStart,
+      id,
       description,
       status,
       title,
@@ -112,11 +138,90 @@ export default function AuctionDetails() {
     };
   }
 
-  const handleRichTextChange = (html) => {
-    setRichText(html);
-  };
+  async function bidOffer() {
+    const parsedOfferBid = parseInt(offerBid.replace(/\./g, ""));
+
+    if (auctionDetails.status != "Ongoing") {
+      return;
+    }
+
+    if (parsedOfferBid < auctionDetails.openPrice) {
+      return;
+    }
+
+    const body = {
+      bidderId: userData.id,
+      auctionId: id,
+      priceOffered: parsedOfferBid,
+      isWin: false,
+    };
+
+    const payload = {
+      url: `/api/offers/add`,
+      method: "POST",
+      body,
+    };
+
+    const fetch = await fetchApi(payload);
+
+    if (fetch.isOk) {
+      getOffersByAuctionId();
+    }
+    setOfferBid(0);
+  }
+
+  function openDialogOngoing() {}
+  function openDialogDone() {}
+
+  // async function startAuction() {
+  //   const body = {
+  //     id: auctionDetails.id,
+  //     data: {
+  //       status: "Ongoing",
+  //     },
+  //   };
+
+  //   const payload = {
+  //     url: `/api/auctions/update`,
+  //     method: "POST",
+  //     body,
+  //   };
+
+  //   const fetch = await fetchApi(payload);
+
+  //   if (fetch.isOk) {
+  //     getDetailsById();
+  //   }
+  // }
+
+  // async function closeAuction() {
+  //   const body = {
+  //     id: auctionDetails.id,
+  //     data: {
+  //       status: "Done",
+  //     },
+  //   };
+
+  //   const payload = {
+  //     url: `/api/auctions/update`,
+  //     method: "POST",
+  //     body,
+  //   };
+
+  //   const fetch = await fetchApi(payload);
+
+  //   if (fetch.isOk) {
+  //     getDetailsById();
+  //   }
+  // }
 
   useEffect(() => {
+    if (!localStorage.userData) {
+      return;
+    } else {
+      setUserData(JSON.parse(localStorage.userData));
+    }
+
     if (id) {
       getDetailsById();
     }
@@ -127,17 +232,17 @@ export default function AuctionDetails() {
   return (
     <>
       <div className="flex">
+        <ImagePopup
+          imageUrl={imgUrl}
+          onClose={() => setOpenPopUp(false)}
+          isOpen={openPopUp}
+        />
         <div className="w-full">
           <img
             onClick={() => setOpenPopUp(true)}
             src={imgUrl}
             alt=""
             className="w-80 cursor-pointer h-80 object-cover rounded-lg"
-          />
-          <ImagePopup
-            imageUrl={imgUrl}
-            onClose={() => setOpenPopUp(false)}
-            isOpen={openPopUp}
           />
           <div className="flex items-center space-x-4 mt-4">
             {creatorAvatar ? (
@@ -226,7 +331,32 @@ export default function AuctionDetails() {
           </div>
         </div>
         <div className="ml-10 w-10/12">
-          <DetailsStatus status={auctionDetails.status} />
+          <div className="flex gap-2">
+            <DetailsStatus
+              status={auctionDetails.status}
+              timeEnd={auctionDetails.timeEnd}
+            />
+
+            {auctionDetails.status == "Waiting" &&
+            userData.expand.roleId.roleName == "officer" ? (
+              <button
+                onClick={openDialogOngoing}
+                className="p-4 cursor-pointer rounded-lg bg-blue-600 hover:bg-blue-700 text-white h-full font-bold"
+              >
+                Buka
+              </button>
+            ) : null}
+
+            {auctionDetails.status == "Ongoing" &&
+            userData.expand.roleId.roleName == "officer" ? (
+              <button
+                onClick={openDialogDone}
+                className="p-4 cursor-pointer text-sm rounded-lg bg-green-600 hover:bg-green-700 text-white min-h-full font-bold"
+              >
+                Selesai
+              </button>
+            ) : null}
+          </div>
           <div className="border border-gray-300 mt-4 rounded-lg p-5 shadow-lg">
             {auctionDetails.status == "Done" ? (
               <h2 className="text-lg font-bold">Pemenang &#128512;</h2>
@@ -289,6 +419,38 @@ export default function AuctionDetails() {
                 >
                   Lihat Semua Tawaran
                 </span>
+                {auctionDetails.status == "Ongoing" &&
+                userData.expand.roleId.roleName == "buyer" ? (
+                  <div className="mt-4 border p-3 rounded">
+                    <div className="w-full">
+                      <label
+                        htmlFor="openPrice"
+                        className="block mb-2 font-medium text-gray-900"
+                      >
+                        Ajukan Penawaran
+                        <span className="ml-2 text-xs text-gray-400">
+                          Rupiah
+                        </span>
+                      </label>
+                      <div className="flex gap-2 h-10 items-center">
+                        <input
+                          id="offerBid"
+                          name="offerBid"
+                          type="text"
+                          onChange={handleBidOffer}
+                          value={offerBid}
+                          autoComplete="offerBid"
+                          placeholder="Harga Awal"
+                          required
+                          className="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5"
+                        />
+                        <button className="btn" onClick={bidOffer}>
+                          Ajukan
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
                 <OffersDialog
                   list={offersList}
                   isOpen={offersDialogOpen}
@@ -309,7 +471,7 @@ function DetailsSkeleton() {
   return <>Loading</>;
 }
 
-function DetailsStatus({ status }) {
+function DetailsStatus({ status, timeEnd }) {
   if (status == "Ongoing") {
     return (
       <div className="bg-blue-600 hover:bg-blue-700 w-full rounded-lg uppercase p-4 text-white font-bold">
@@ -319,7 +481,7 @@ function DetailsStatus({ status }) {
   } else if (status == "Done") {
     return (
       <div className="bg-green-600 hover:bg-green-700 w-full rounded-lg uppercase p-4 text-white font-bold">
-        Selesai
+        Selesai {timeAgo(timeEnd)}
       </div>
     );
   } else if (status == "Canceled") {
@@ -341,113 +503,4 @@ function DetailsStatus({ status }) {
       </div>
     );
   }
-}
-
-function OffersDialog({ isOpen, closeStateFunction, list }) {
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "unset";
-    }
-    console.log("LIST: ", list);
-  }, [isOpen]);
-
-  return (
-    <AnimatePresence>
-      {isOpen && (
-        <motion.div
-          className="fixed inset-0 z-50 flex items-center justify-center overflow-auto"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-        >
-          <motion.div
-            className="fixed inset-0 bg-black"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 0.5 }}
-            exit={{ opacity: 0 }}
-          />
-          <motion.div
-            className="relative bg-white mx-3 rounded-lg shadow-lg"
-            initial={{ translateY: 100, opacity: 0 }}
-            animate={{ translateY: 0, opacity: 1 }}
-            exit={{ translateY: 100, opacity: 0 }}
-            transition={{ duration: 0.3 }}
-          >
-            <div className="relative w-full h-full md:h-auto">
-              <div className="relative bg-white rounded-lg shadow dark:bg-gray-700">
-                <button
-                  type="button"
-                  className="absolute top-3 right-2.5 text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center dark:hover:bg-gray-800 dark:hover:text-white"
-                  onClick={closeStateFunction}
-                >
-                  <svg
-                    aria-hidden="true"
-                    className="w-5 h-5"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                      clipRule="evenodd"
-                    ></path>
-                  </svg>
-                </button>
-                <div className="p-8 min-w-max text-right">
-                  <div className="overflow-auto max-h-72 m-4">
-                    <table className="table w-full">
-                      <thead>
-                        <tr>
-                          <th></th>
-                          <th>Nama</th>
-                          <th>Harga Ditawarkan</th>
-                          <th>Waktu Penawaran</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {list.map((offer, index) => {
-                          return (
-                            <tr>
-                              {offer.isWin ? (
-                                <th className="flex items-center gap-2">
-                                  <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    viewBox="0 0 20 20"
-                                    fill="currentColor"
-                                    className="w-5 h-5 text-yellow-500"
-                                  >
-                                    <path d="M15.98 1.804a1 1 0 00-1.96 0l-.24 1.192a1 1 0 01-.784.785l-1.192.238a1 1 0 000 1.962l1.192.238a1 1 0 01.785.785l.238 1.192a1 1 0 001.962 0l.238-1.192a1 1 0 01.785-.785l1.192-.238a1 1 0 000-1.962l-1.192-.238a1 1 0 01-.785-.785l-.238-1.192zM6.949 5.684a1 1 0 00-1.898 0l-.683 2.051a1 1 0 01-.633.633l-2.051.683a1 1 0 000 1.898l2.051.684a1 1 0 01.633.632l.683 2.051a1 1 0 001.898 0l.683-2.051a1 1 0 01.633-.633l2.051-.683a1 1 0 000-1.898l-2.051-.683a1 1 0 01-.633-.633L6.95 5.684zM13.949 13.684a1 1 0 00-1.898 0l-.184.551a1 1 0 01-.632.633l-.551.183a1 1 0 000 1.898l.551.183a1 1 0 01.633.633l.183.551a1 1 0 001.898 0l.184-.551a1 1 0 01.632-.633l.551-.183a1 1 0 000-1.898l-.551-.184a1 1 0 01-.633-.632l-.183-.551z" />
-                                  </svg>
-                                  {index + 1}
-                                </th>
-                              ) : (
-                                <th className="text-center">{index + 1}</th>
-                              )}
-                              <td>{offer.name}</td>
-                              <td>{formatIDR(offer.priceOffered)}</td>
-                              <td>{timeAgo(offer.offeredTime)}</td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                  <button
-                    onClick={closeStateFunction}
-                    type="button"
-                    className="text-gray-500 mt-4 bg-white hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-gray-200 rounded-lg border border-gray-200 text-sm font-medium px-5 py-2.5 hover:text-gray-900 focus:z-10 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-500 dark:hover:text-white dark:hover:bg-gray-600 dark:focus:ring-gray-600"
-                  >
-                    OK
-                  </button>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
-  );
 }
