@@ -4,6 +4,7 @@ import handleAddItem from "@/lib/handleAddItem";
 import router from "next/router";
 import ProtectedRoute from "@/lib/ProtectedRoute";
 import dynamic from "next/dynamic";
+import Calendar from "@/components/Calendar";
 
 const RichTextEditor = dynamic(() => import("@/components/RichTextEditor"), {
   ssr: false,
@@ -17,6 +18,7 @@ export default function Sell() {
   const [openPrice, setOpenPrice] = useState(0);
   const [richText, setRichText] = useState("");
   const [userData, setUserData] = useState({});
+  const [calendar, setCalendar] = useState(new Date());
 
   const handleRichTextChange = (html) => {
     setRichText(html);
@@ -229,6 +231,17 @@ export default function Sell() {
                   required
                   className="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5"
                 />
+              </div>
+            </div>
+            <div className="mt-4">
+              <div className="w-full">
+                <label
+                  htmlFor="timeStart"
+                  className="block mb-2 text-lg font-medium text-gray-900"
+                >
+                  Mulai Lelang
+                </label>
+                <Calendar date={calendar} setDate={setCalendar} styleClass="text-lg border p-3 showIcon" />
               </div>
             </div>
             <div className="mt-4">

@@ -4,12 +4,12 @@ import pb from "@/lib/pocketbase";
 export default async function login(req, res) {
   const { username, password } = req.body;
 
-  if (!username || !username) {
+  if (!username || !password) {
     return res.status(400).json({ error: "Invalid Request", isOk: false });
   }
 
   // console.log("USERNAME:",username)
-  // console.log("PASSWORD:",username)
+  // console.log("PASSWORD:",password)
 
   try {
     const authData = await pb
