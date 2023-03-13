@@ -5,7 +5,7 @@ async function findAuctionById(req, res) {
   const { id } = req.query;
   try {
     const record = await pb.collection("auctions").getOne(id, {
-      expand: "creatorId,itemId,itemId.categoryId,operatorUserId,winnerId",
+      expand: "creatorId,itemId,itemId.categoryId,operatorUserId,winnerOffer,winnerOffer.bidderId",
     });
 
     if (record) {

@@ -3,7 +3,7 @@ import authMiddlewareApi from "@/middleware/authMiddlewareApi";
 
 async function update(req, res) {
   try {
-    console.log(req.body.id)
+    // console.log(req.body.id)
     const record = await pb
       .collection("auctions")
       .update(req.body.id, req.body.data);

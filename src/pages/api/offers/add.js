@@ -3,7 +3,7 @@ import authMiddlewareApi from "@/middleware/authMiddlewareApi";
 
 async function addOffers(req, res) {
   try {
-    console.log("body:", req.body);
+    // console.log("body:", req.body);
     const record = await pb.collection("offers").create(req.body);
 
     if (record) {

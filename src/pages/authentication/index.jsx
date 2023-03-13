@@ -54,7 +54,7 @@ function LoginComponent({ changeSite }) {
       router.push("/");
       setOnLoading(false);
     } else {
-      console.log("ERROR:", error);
+      // console.log("ERROR:", error);
       error ? error : (error = "Unexpected Error");
       setErrorMessage(error);
       setShowError(true);
@@ -67,8 +67,8 @@ function LoginComponent({ changeSite }) {
         <div className="flex flex-col items-center justify-center px-6 py-8 mx-auto md:h-screen lg:py-0">
           <div className="w-full bg-white rounded-lg shadow md:mt-0 sm:max-w-md xl:p-0">
             <div className="p-6 space-y-4 md:space-y-6 sm:p-8">
-              <h1 className="text-xl font-bold leading-tight tracking-tight text-gray-900 md:text-2xl">
-                Sign in to your account
+              <h1 className="text-3xl font-bold leading-tight tracking-tight text-gray-900">
+                Bidder <span className="ml-1 text-xl text-gray-400">Masuk</span>
               </h1>
               {showError ? (
                 <div className="alert alert-error shadow-lg text-white bg-red-500">
@@ -129,18 +129,18 @@ function LoginComponent({ changeSite }) {
                 </div>
                 {!onLoading ? (
                   <button type="submit" className="w-full btn">
-                    Sign in
+                    Masuk
                   </button>
                 ) : (
                   <button className="w-full btn btn-disabled loading font-medium rounded-lg text-sm" />
                 )}
                 <p className="text-sm font-light text-gray-500">
-                  Don&prime;t have an account yet?
+                  Belum punya akun?
                   <a
                     onClick={changeSite}
                     className="font-medium cursor-pointer text-primary-600 hover:underline ml-1"
                   >
-                    Sign up
+                    Daftar
                   </a>
                 </p>
               </form>
@@ -187,7 +187,7 @@ function RegisterComponent({ changeSite }) {
 
     const payload = {
       method: "POST",
-      url: "/api/users/register",
+      url: "/api/authentication/register",
       body,
     };
     const response = await fetchApi(payload);
@@ -199,7 +199,8 @@ function RegisterComponent({ changeSite }) {
       // console.log("ERROR: ", error);
       setShowError(true);
       setErrorMessage(error.errorLabel);
-    } else {
+      setOnLoading(false);
+    } else if (response.isOk) {
       let { success, error } = await authenticate({
         username: body.username,
         password: body.password,
@@ -208,12 +209,12 @@ function RegisterComponent({ changeSite }) {
       if (success) {
         router.push("/");
       } else {
-        console.log("ERROR:", error);
+        // console.log("ERROR:", error);
         setErrorMessage(error);
         setShowError(true);
       }
+      setOnLoading(false);
     }
-    setOnLoading(false);
   };
 
   useEffect(() => {
@@ -226,8 +227,9 @@ function RegisterComponent({ changeSite }) {
         <div className="flex flex-col items-center justify-center px-6 py-8 mx-auto min-h-screen">
           <div className="w-full bg-white rounded-lg shadow md:mt-0 sm:max-w-md xl:p-0">
             <div className="p-6 space-y-4 md:space-y-6 sm:p-8">
-              <h1 className="text-xl font-bold leading-tight tracking-tight text-gray-900 md:text-2xl">
-                Create new account
+              <h1 className="text-3xl font-bold leading-tight tracking-tight text-gray-900">
+                Bidder{" "}
+                <span className="ml-1 text-xl text-gray-400">Daftar</span>
               </h1>
               {showError ? (
                 <div className="alert alert-error shadow-lg text-white bg-red-500">
@@ -280,7 +282,7 @@ function RegisterComponent({ changeSite }) {
                     htmlFor="name"
                     className="block mb-2 text-sm font-medium text-gray-900"
                   >
-                    Name
+                    Nama
                   </label>
                   <input
                     id="name"
@@ -297,7 +299,7 @@ function RegisterComponent({ changeSite }) {
                     htmlFor="username"
                     className="block mb-2 text-sm font-medium text-gray-900"
                   >
-                    Username
+                    Nama User
                     <span className="ml-1 text-gray-300">ex : john_doe23</span>
                   </label>
                   <input
@@ -330,10 +332,10 @@ function RegisterComponent({ changeSite }) {
                 </div>
                 <div>
                   <label
-                    htmlFor="email"
+                    htmlFor="roles"
                     className="block mb-2 text-sm font-medium text-gray-900"
                   >
-                    Roles
+                    Peran Pengguna
                   </label>
                   {roleList.map((role) => {
                     return (
@@ -346,6 +348,7 @@ function RegisterComponent({ changeSite }) {
                             onChange={() => setSelectedRole(role.id)}
                             type="radio"
                             name="roles"
+                            id="roles"
                             className="radio checked:bg-blue-500"
                             required
                             value={role.id}
@@ -360,7 +363,7 @@ function RegisterComponent({ changeSite }) {
                     htmlFor="password"
                     className="block mb-2 text-sm font-medium text-gray-900"
                   >
-                    Password
+                    Kata Sandi
                   </label>
                   <input
                     id="password"
@@ -376,7 +379,7 @@ function RegisterComponent({ changeSite }) {
                     htmlFor="confirmPassword"
                     className="block mb-2 text-sm font-medium text-gray-900"
                   >
-                    Confirm Password
+                    Konfirmasi Kata Sandi
                   </label>
                   <input
                     id="confirmPassword"
@@ -389,18 +392,18 @@ function RegisterComponent({ changeSite }) {
                 </div>
                 {!onLoading ? (
                   <button type="submit" className="w-full btn">
-                    Sign up
+                    Daftar
                   </button>
                 ) : (
                   <button className="w-full btn btn-disabled loading font-medium rounded-lg text-sm" />
                 )}
                 <p className="text-sm font-light text-gray-500">
-                  Already have an account?
+                 Sudah punya akun?
                   <a
                     onClick={changeSite}
                     className="font-medium cursor-pointer text-primary-600 hover:underline ml-1"
                   >
-                    Sign In
+                    Masuk
                   </a>
                 </p>
               </form>

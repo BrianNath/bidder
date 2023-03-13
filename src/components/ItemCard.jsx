@@ -26,7 +26,7 @@ function ItemCard({
       method: "GET",
     };
     const fetch = await fetchApi(payload);
-    console.log("FETCH:", fetch);
+    // console.log("FETCH:", fetch);
     if (fetch.isOk) {
       setImageUrl(fetch.url);
     }

@@ -3,7 +3,7 @@ import jwt from "jsonwebtoken";
 import { useRouter } from "next/router";
 
 export const authComponent = (WrappedComponent) => {
-  console.log("TYPEOF ", typeof process.env.JWT_SECRET_CONFIG)
+  // console.log("TYPEOF ", typeof process.env.JWT_SECRET_CONFIG)
   const AuthComponent = (props) => {
     const router = useRouter();
     useEffect(() => {
@@ -13,11 +13,11 @@ export const authComponent = (WrappedComponent) => {
         router.push("/authentication");
       } else {
         try {
-          console.log("TOKEN: ",token)
+          // console.log("TOKEN: ",token)
           const decoded = jwt.verify(token, process.env.JWT_SECRET_CONFIG);
           props.user = decoded;
         } catch (err) {
-          console.error(err);
+          // console.error(err);
           router.push("/authentication");
         }
       }

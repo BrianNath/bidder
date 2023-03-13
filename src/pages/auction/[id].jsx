@@ -1,29 +1,33 @@
+import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import fetchApi from "@/utils/fetchApi";
-import { useState, useEffect } from "react";
 import getUserAvatar from "@/utils/getUserAvatar";
 import { formatIDR } from "@/utils/numbering";
 import { timeAgo } from "@/utils/date";
+import DetailsStatus from "@/components/DetailsStatus";
 import ImagePopup from "@/components/ImagePopup";
-import OffersDialog from "@/components/OffersDialog";
-import executeAtTime from "@/utils/executeAtTime";
+import { motion, AnimatePresence } from "framer-motion";
+// import WinnerCard from "@/components/WinnerCard";
+import dynamic from "next/dynamic";
+
+const WinnerCard = dynamic(() => import("@/components/WinnerCard"), {
+  ssr: false,
+});
 
 export default function AuctionDetails() {
   const router = useRouter();
   const { id } = router.query;
 
-  const [creatorAvatar, setCreatorAvatar] = useState("");
-  const [winnerAvatar, setWinnerAvatar] = useState("");
-  const [auctionDetails, setAuctionDetails] = useState({});
-  const [winnerAuction, setWinnerAuction] = useState({});
   const [offersList, setOffersList] = useState([]);
-  const [onLoading, setOnLoading] = useState(true);
+  const [auctionDetails, setAuctionDetails] = useState({});
+  const [creatorAvatar, setCreatorAvatar] = useState("");
   const [imgUrl, setImgUrl] = useState("");
-  const [offersDialogOpen, setOffersDialogOpen] = useState(false);
+  const [onLoading, setOnLoading] = useState(true);
   const [openPopUp, setOpenPopUp] = useState(false);
   const [userData, setUserData] = useState({});
-  const [offerBid, setOfferBid] = useState(0);
-  const [auctionData, setAuctionData] = useState({});
+  const [dialogOngoing, setDialogOngoing] = useState(false);
+  const [dialogDone, setDialogDone] = useState(false);
+  const [winnerCandidates, setWinnerCandidates] = useState([]);
 
   async function getImageURL() {
     const options = { thumb: "150x300" };
@@ -45,23 +49,15 @@ export default function AuctionDetails() {
       method: "GET",
     };
     const fetch = await fetchApi(payload);
-    // console.log("FETCH:", fetch);
-    setAuctionData(fetch.record);
     if (fetch.isOk) {
       const dataNeeded = neededDetailsData(fetch.record);
+      console.log("dataNeeded:", dataNeeded);
       setAuctionDetails(dataNeeded);
       setCreatorAvatar(getUserAvatar(dataNeeded.creatorName));
       getOffersByAuctionId();
       getImageURL();
     }
     setOnLoading(false);
-  }
-
-  function handleBidOffer(event) {
-    !event.target.value ? (event.target.value = "0") : null;
-    const rawValue = event.target.value.replace(/[^\d]/g, "");
-    const formattedValue = parseInt(rawValue).toLocaleString();
-    setOfferBid(formattedValue);
   }
 
   async function getOffersByAuctionId() {
@@ -72,31 +68,21 @@ export default function AuctionDetails() {
     const fetch = await fetchApi(payload);
     if (fetch.isOk) {
       const neededData = fetch.record.map((offer) => neededOffersData(offer));
-      // console.log("NEEDED OFFERS DATA = ", neededData);
       setOffersList(neededData);
-      setWinnerAuction(neededData[0]);
-      const winnerName = neededData[0]?.name;
-      setWinnerAvatar(getUserAvatar(winnerName ? winnerName : ""));
 
-      //   if (auctionDetails.status == "Waiting") {
-      //     startAuction();
-      //   }
-
-      //   if (auctionDetails.status == "Ongoing") {
-      //     closeAuction();
-      //   }
+      console.log("winnerOfferDetails : ", auctionDetails.winnerOfferDetails);
+      console.log("auctionDetails : ", auctionDetails);
     }
   }
 
   function neededOffersData(offersRecord) {
-    // console.log("OFFERS RECORD = ", offersRecord);
     const name = offersRecord.expand.bidderId.name;
     const priceOffered = offersRecord.priceOffered;
+    const id = offersRecord.id;
     const offeredTime = Date.parse(offersRecord.created);
-    const isWin = offersRecord.isWin;
 
     return {
-      isWin,
+      id,
       name,
       priceOffered,
       offeredTime,
@@ -119,8 +105,12 @@ export default function AuctionDetails() {
     const createdAt = Date.parse(detailsRecord.timeStart);
     const status = detailsRecord.status;
     const id = detailsRecord.id;
+    const winnerOffer = detailsRecord.winnerOffer;
+    const winnerOfferDetails = detailsRecord.expand.winnerOffer;
 
     return {
+      winnerOfferDetails,
+      winnerOffer,
       timeEnd,
       timeStart,
       id,
@@ -138,26 +128,26 @@ export default function AuctionDetails() {
     };
   }
 
-  async function bidOffer() {
-    const parsedOfferBid = parseInt(offerBid.replace(/\./g, ""));
+  function openDialogOngoing() {
+    setDialogOngoing(true);
+  }
 
-    if (auctionDetails.status != "Ongoing") {
-      return;
-    }
+  function openDialogDone() {
+    setDialogDone(true);
+  }
 
-    if (parsedOfferBid < auctionDetails.openPrice) {
-      return;
-    }
-
+  async function startAuction() {
+    const now = new Date();
     const body = {
-      bidderId: userData.id,
-      auctionId: id,
-      priceOffered: parsedOfferBid,
-      isWin: false,
+      id: auctionDetails.id,
+      data: {
+        status: "Ongoing",
+        timeStart: now,
+      },
     };
 
     const payload = {
-      url: `/api/offers/add`,
+      url: `/api/auctions/update`,
       method: "POST",
       body,
     };
@@ -165,63 +155,44 @@ export default function AuctionDetails() {
     const fetch = await fetchApi(payload);
 
     if (fetch.isOk) {
-      getOffersByAuctionId();
+      getDetailsById();
     }
-    setOfferBid(0);
   }
 
-  function openDialogOngoing() {}
-  function openDialogDone() {}
+  async function closeAuction(winnerOffer, closePrice) {
+    const now = new Date();
+    const body = {
+      id: auctionDetails.id,
+      data: {
+        status: "Done",
+        timeEnd: now,
+        winnerOffer,
+        closePrice,
+      },
+    };
 
-  // async function startAuction() {
-  //   const body = {
-  //     id: auctionDetails.id,
-  //     data: {
-  //       status: "Ongoing",
-  //     },
-  //   };
+    // console.log("CLOSE AUCTION BODY:", body);
 
-  //   const payload = {
-  //     url: `/api/auctions/update`,
-  //     method: "POST",
-  //     body,
-  //   };
+    const payload = {
+      url: `/api/auctions/update`,
+      method: "POST",
+      body,
+    };
 
-  //   const fetch = await fetchApi(payload);
+    const fetch = await fetchApi(payload);
 
-  //   if (fetch.isOk) {
-  //     getDetailsById();
-  //   }
-  // }
-
-  // async function closeAuction() {
-  //   const body = {
-  //     id: auctionDetails.id,
-  //     data: {
-  //       status: "Done",
-  //     },
-  //   };
-
-  //   const payload = {
-  //     url: `/api/auctions/update`,
-  //     method: "POST",
-  //     body,
-  //   };
-
-  //   const fetch = await fetchApi(payload);
-
-  //   if (fetch.isOk) {
-  //     getDetailsById();
-  //   }
-  // }
+    if (fetch.isOk) {
+      getDetailsById();
+    }
+  }
 
   useEffect(() => {
-    if (!localStorage.userData) {
+    // console.log("LOCAL STORAGE: ", localStorage.userData);
+    if (!localStorage?.userData) {
       return;
     } else {
       setUserData(JSON.parse(localStorage.userData));
     }
-
     if (id) {
       getDetailsById();
     }
@@ -231,7 +202,12 @@ export default function AuctionDetails() {
 
   return (
     <>
-      <div className="flex">
+      {auctionDetails.status == "Waiting" && (
+        <h1 className="font-bold bg-gray-400 rounded p-2 w-full text-xl text-white text-center">
+          PREVIEW
+        </h1>
+      )}
+      <div className="flex mt-4">
         <ImagePopup
           imageUrl={imgUrl}
           onClose={() => setOpenPopUp(false)}
@@ -276,7 +252,9 @@ export default function AuctionDetails() {
             <div className="font-medium">
               <div>{auctionDetails.creatorName}</div>
               <div className="text-sm text-gray-500">
-                Dilelang {timeAgo(auctionDetails.createdAt)}
+                {auctionDetails.timeStart
+                  ? `Dilelang ${timeAgo(auctionDetails.timeStart)}`
+                  : "Belum Dilelang"}
               </div>
             </div>
           </div>
@@ -324,7 +302,7 @@ export default function AuctionDetails() {
             <div className="mt-2">
               <p className="font-medium mr-2 text-gray-400">Deskripsi:</p>
               <div
-                className=""
+                style={{}}
                 dangerouslySetInnerHTML={{ __html: auctionDetails.description }}
               />
             </div>
@@ -336,131 +314,49 @@ export default function AuctionDetails() {
               status={auctionDetails.status}
               timeEnd={auctionDetails.timeEnd}
             />
-
             {auctionDetails.status == "Waiting" &&
             userData.expand.roleId.roleName == "officer" ? (
-              <button
-                onClick={openDialogOngoing}
-                className="p-4 cursor-pointer rounded-lg bg-blue-600 hover:bg-blue-700 text-white h-full font-bold"
-              >
-                Buka
-              </button>
+              <>
+                <button
+                  onClick={openDialogOngoing}
+                  className="p-4 cursor-pointer rounded-lg bg-blue-600 hover:bg-blue-700 text-white h-full font-bold"
+                >
+                  Buka
+                </button>
+                <ActionAuctionDialog
+                  handleOpenAuc={startAuction}
+                  isOpen={dialogOngoing}
+                  closeStateFunction={() => setDialogOngoing(false)}
+                  status={auctionDetails.status}
+                />
+              </>
             ) : null}
 
             {auctionDetails.status == "Ongoing" &&
             userData.expand.roleId.roleName == "officer" ? (
-              <button
-                onClick={openDialogDone}
-                className="p-4 cursor-pointer text-sm rounded-lg bg-green-600 hover:bg-green-700 text-white min-h-full font-bold"
-              >
-                Selesai
-              </button>
+              <>
+                <button
+                  onClick={openDialogDone}
+                  className="p-4 cursor-pointer text-sm rounded-lg bg-green-600 hover:bg-green-700 text-white min-h-full font-bold"
+                >
+                  Selesai
+                </button>
+                <ActionAuctionDialog
+                  handleCloseAuc={closeAuction}
+                  isOpen={dialogDone}
+                  closeStateFunction={() => setDialogDone(false)}
+                  status={auctionDetails.status}
+                  winnerList={winnerCandidates}
+                />
+              </>
             ) : null}
           </div>
-          <div className="border border-gray-300 mt-4 rounded-lg p-5 shadow-lg">
-            {auctionDetails.status == "Done" ? (
-              <h2 className="text-lg font-bold">Pemenang &#128512;</h2>
-            ) : (
-              <h2 className="text-lg font-bold">Pemenang Sementara</h2>
-            )}
-            {winnerAuction ? (
-              <div>
-                <div className="mt-4">
-                  <div className="flex items-center space-x-4 mt-4">
-                    {winnerAvatar ? (
-                      <div className="avatar placeholder">
-                        <div className="bg-neutral-focus text-neutral-content rounded-full w-8">
-                          <span className="text-xs">{winnerAvatar}</span>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="avatar placeholder">
-                        <div className="bg-neutral-focus text-neutral-content rounded-full w-8">
-                          <span className="text-xs">
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              strokeWidth={1.5}
-                              stroke="currentColor"
-                              className="w-5 h-5"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"
-                              />
-                            </svg>
-                          </span>
-                        </div>
-                      </div>
-                    )}
-                    <div className="font-medium">
-                      <div>{winnerAuction.name}</div>
-                      <div className="text-sm text-gray-500">
-                        Ditawar {timeAgo(winnerAuction.offeredTime)}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="my-4">
-                  <label className="mr-2 text-gray-500 font-medium">
-                    Tawaran Terakhir :
-                  </label>
-                  <span className="font-bold relative w-full">
-                    <span className="absolute w-80">
-                      {formatIDR(winnerAuction.priceOffered)}
-                    </span>
-                  </span>
-                </div>
-                <span
-                  onClick={() => setOffersDialogOpen(true)}
-                  className="hover:underline cursor-pointer text-sm font-medium text-gray-400"
-                >
-                  Lihat Semua Tawaran
-                </span>
-                {auctionDetails.status == "Ongoing" &&
-                userData.expand.roleId.roleName == "buyer" ? (
-                  <div className="mt-4 border p-3 rounded">
-                    <div className="w-full">
-                      <label
-                        htmlFor="openPrice"
-                        className="block mb-2 font-medium text-gray-900"
-                      >
-                        Ajukan Penawaran
-                        <span className="ml-2 text-xs text-gray-400">
-                          Rupiah
-                        </span>
-                      </label>
-                      <div className="flex gap-2 h-10 items-center">
-                        <input
-                          id="offerBid"
-                          name="offerBid"
-                          type="text"
-                          onChange={handleBidOffer}
-                          value={offerBid}
-                          autoComplete="offerBid"
-                          placeholder="Harga Awal"
-                          required
-                          className="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5"
-                        />
-                        <button className="btn" onClick={bidOffer}>
-                          Ajukan
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ) : null}
-                <OffersDialog
-                  list={offersList}
-                  isOpen={offersDialogOpen}
-                  closeStateFunction={() => setOffersDialogOpen(false)}
-                />
-              </div>
-            ) : (
-              <div className="text-gray-400">(Belum Ada)</div>
-            )}
-          </div>
+          <WinnerCard
+            auctionDetails={auctionDetails}
+            offerList={offersList}
+            userData={userData}
+            setWinnerCandidates={setWinnerCandidates}
+          />
         </div>
       </div>
     </>
@@ -471,36 +367,157 @@ function DetailsSkeleton() {
   return <>Loading</>;
 }
 
-function DetailsStatus({ status, timeEnd }) {
-  if (status == "Ongoing") {
-    return (
-      <div className="bg-blue-600 hover:bg-blue-700 w-full rounded-lg uppercase p-4 text-white font-bold">
-        Sedang Berlangsung
-      </div>
-    );
-  } else if (status == "Done") {
-    return (
-      <div className="bg-green-600 hover:bg-green-700 w-full rounded-lg uppercase p-4 text-white font-bold">
-        Selesai {timeAgo(timeEnd)}
-      </div>
-    );
-  } else if (status == "Canceled") {
-    return (
-      <div className="bg-red-600 hover:bg-red-700 w-full rounded-lg uppercase p-4 text-white font-bold">
-        Dibatalkan
-      </div>
-    );
-  } else if (status == "Waiting") {
-    return (
-      <div className="bg-yellow-600 hover:bg-yellow-700 w-full rounded-lg uppercase p-4 text-white font-bold">
-        Menunggu
-      </div>
-    );
-  } else {
-    return (
-      <div className="bg-gray-600 hover:bg-gray-700 w-full rounded-lg uppercase p-4 text-white font-bold">
-        {status}
-      </div>
-    );
-  }
+function ActionAuctionDialog({
+  isOpen,
+  closeStateFunction,
+  status,
+  handleCloseAuc,
+  handleOpenAuc,
+  winnerList,
+}) {
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          className="fixed inset-0 z-50 flex items-center justify-center overflow-auto"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+        >
+          <motion.div
+            className="fixed inset-0 bg-black"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.5 }}
+            exit={{ opacity: 0 }}
+          />
+          <motion.div
+            className="relative bg-white mx-3 rounded-lg shadow-lg"
+            initial={{ translateY: 100, opacity: 0 }}
+            animate={{ translateY: 0, opacity: 1 }}
+            exit={{ translateY: 100, opacity: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <div className="relative w-full h-full md:h-auto">
+              <div className="relative bg-white rounded-lg shadow dark:bg-gray-700">
+                <button
+                  type="button"
+                  className="absolute top-3 right-2.5 text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center dark:hover:bg-gray-800 dark:hover:text-white"
+                  onClick={closeStateFunction}
+                >
+                  <svg
+                    aria-hidden="true"
+                    className="w-5 h-5"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                      clipRule="evenodd"
+                    ></path>
+                  </svg>
+                </button>
+                {status == "Waiting" ? (
+                  <div className="p-8 text-center">
+                    <svg
+                      aria-hidden="true"
+                      className="mx-auto mb-4 text-gray-400 w-14 h-14 dark:text-gray-200"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                      ></path>
+                    </svg>
+                    <h3 className="mb-5 text-lg font-normal text-gray-500 dark:text-gray-400">
+                      Buka lelang untuk barang ini?
+                    </h3>
+                    <button
+                      onClick={handleOpenAuc}
+                      type="button"
+                      className="text-white bg-blue-600 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 dark:focus:ring-blue-800 font-medium rounded-lg text-sm inline-flex items-center px-5 py-2.5 text-center mr-2"
+                    >
+                      Buka Lelang
+                    </button>
+                    <button
+                      onClick={closeStateFunction}
+                      type="button"
+                      className="text-gray-500 bg-white hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-gray-200 rounded-lg border border-gray-200 text-sm font-medium px-5 py-2.5 hover:text-gray-900 focus:z-10 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-500 dark:hover:text-white dark:hover:bg-gray-600 dark:focus:ring-gray-600"
+                    >
+                      Batal
+                    </button>
+                  </div>
+                ) : (
+                  <div className="p-8 text-center">
+                    <h3 className="m-5 text-lg font-normal text-gray-500 dark:text-gray-400">
+                      Silahkan pilih pemenang lelang ini
+                    </h3>
+                    <div className="overflow-auto max-h-72 m-4">
+                      <table className="table w-full">
+                        <thead>
+                          <tr>
+                            <th></th>
+                            <th>Nama</th>
+                            <th>Harga Ditawarkan</th>
+                            <th>Waktu Penawaran</th>
+                            <th></th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {winnerList.map((offer, index) => {
+                            return (
+                              <tr key={offer.id}>
+                                <td>{index + 1}</td>
+                                <td>{offer.name}</td>
+                                <td>{formatIDR(offer.priceOffered)}</td>
+                                <td>{timeAgo(offer.offeredTime)}</td>
+                                <td className="text-center">
+                                  <button
+                                    onClick={() => handleCloseAuc(offer.id)}
+                                    className="p-2 rounded text-green-500 bg-green-100 hover:bg-green-200 hover:text-green-00"
+                                  >
+                                    <svg
+                                      xmlns="http://www.w3.org/2000/svg"
+                                      fill="none"
+                                      viewBox="0 0 24 24"
+                                      strokeWidth={1.5}
+                                      stroke="currentColor"
+                                      className="w-6 h-6"
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        d="M4.5 12.75l6 6 9-13.5"
+                                      />
+                                    </svg>
+                                  </button>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                    <button
+                      onClick={closeStateFunction}
+                      type="button"
+                      className="text-gray-500 bg-white hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-gray-200 rounded-lg border border-gray-200 text-sm font-medium px-5 py-2.5 hover:text-gray-900 focus:z-10 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-500 dark:hover:text-white dark:hover:bg-gray-600 dark:focus:ring-gray-600"
+                    >
+                      Batal
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
 }

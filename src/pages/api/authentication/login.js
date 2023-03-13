@@ -8,6 +8,9 @@ export default async function login(req, res) {
     return res.status(400).json({ error: "Invalid Request", isOk: false });
   }
 
+  // console.log("USERNAME:",username)
+  // console.log("PASSWORD:",username)
+
   try {
     const authData = await pb
       .collection("users")
@@ -26,7 +29,7 @@ export default async function login(req, res) {
           algorithm: "HS256",
         }
       );
-      console.log("TOKEN", token);
+      // console.log("TOKEN", token);
       res.setHeader("Set-Cookie", `authToken=${token}; Path=/`);
 
       res.status(200).json({ token, isOk: true });

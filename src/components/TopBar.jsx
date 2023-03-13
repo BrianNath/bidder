@@ -6,39 +6,39 @@ import getUserAvatar from "@/utils/getUserAvatar";
 import Link from "next/link";
 
 export default function TopBar() {
-  const router = useRouter();
-  // const location = useLocation();
-
-  const routes = [
+  const [ddIsOpen, setDDIsOpen] = useState(false);
+  const [openUnauthorizedModal, setOpenUnauthorizedModal] = useState(false);
+  const [userInformation, setUserInformation] = useState({});
+  const [showMenu, setShowMenu] = useState(false);
+  const [routes, setRoutes] = useState([
     {
       name: "Halaman Utama",
       href: "/",
+      task: "viewDashboard",
     },
     {
       name: "Lelang",
       href: "/auction",
-    },
-    {
-      name: "Pengguna",
-      href: "/user",
-    },
-    {
-      name: "Jual",
-      href: "/sell",
+      task: "viewAuctions",
     },
     {
       name: "Barang",
       href: "/item",
+      task: "viewItems",
     },
-  ];
+    {
+      name: "Jual",
+      href: "/sell",
+      task: "sellItems",
+    },
+    {
+      name: "Pengguna",
+      href: "/user",
+      task: "manageUsers",
+    },
+  ]);
 
-  const [ddIsOpen, setDDIsOpen] = useState(false);
-  const [openUnauthorizedModal, setOpenUnauthorizedModal] = useState(false);
-  const [userInformation, setUserInformation] = useState({});
-  const [avatar, setAvatar] = useState("");
-  const [showMenu, setShowMenu] = useState(false);
-  const [name, setName] = useState("");
-  const [role, setRole] = useState("");
+  const router = useRouter();
 
   function toggleDD() {
     setDDIsOpen((isOpen) => !isOpen);
@@ -58,7 +58,6 @@ export default function TopBar() {
       method: "GET",
     };
     const fetch = await fetchApi(payload);
-    // console.log("FETCH : ", fetch);
 
     if (fetch.status == 401) {
       return showDialog();
@@ -76,7 +75,7 @@ export default function TopBar() {
       body: {},
     };
     const fetch = await fetchApi(payload);
-    console.log("FETCH:", fetch);
+    // console.log("FETCH:", fetch);
     if (fetch.isOk) {
       localStorage.removeItem("authToken");
       localStorage.removeItem("userData");
@@ -84,21 +83,55 @@ export default function TopBar() {
     }
   }
 
-  function getUserProfile() {
-    const userName = userInformation?.name || "";
-    const userAvatar = getUserAvatar(userName);
-    setAvatar(userAvatar);
-    setName(userName);
-    // setRole(user.);
+  function filterRoutes() {
+    const routeList = [
+      {
+        name: "Halaman Utama",
+        href: "/",
+        task: "viewDashboard",
+      },
+      {
+        name: "Lelang",
+        href: "/auction",
+        task: "viewAuctions",
+      },
+      {
+        name: "Barang",
+        href: "/item",
+        task: "viewItems",
+      },
+      {
+        name: "Jual",
+        href: "/sell",
+        task: "sellItems",
+      },
+      {
+        name: "Pengguna",
+        href: "/user",
+        task: "manageUsers",
+      },
+    ];
+
+    const filteredRoutes = routeList.filter((v) => {
+      console.log(userInformation.expand?.roleId.tasks[v.task]);
+      return userInformation.expand?.roleId.tasks[v.task];
+    });
+
+    setRoutes(filteredRoutes);
   }
 
   useEffect(() => {
-    findSelfUserById();
-    console.log(router);
+    if (localStorage?.userData) {
+      setUserInformation(JSON.parse(localStorage.userData));
+    } else {
+      findSelfUserById();
+    }
   }, []);
 
   useEffect(() => {
-    getUserProfile();
+    if (userInformation) {
+      filterRoutes();
+    }
   }, [userInformation]);
 
   return (
@@ -165,7 +198,7 @@ export default function TopBar() {
                         <Link
                           key={route.name}
                           href={route.href}
-                          className="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
+                          className={`text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium`}
                         >
                           {route.name}
                         </Link>
@@ -208,7 +241,9 @@ export default function TopBar() {
                     {userInformation?.name ? (
                       <div className="avatar placeholder">
                         <div className="bg-neutral-focus text-neutral-content rounded-full w-8">
-                          <span className="text-xs">{avatar}</span>
+                          <span className="text-xs">
+                            {getUserAvatar(userInformation.name)}
+                          </span>
                         </div>
                       </div>
                     ) : (
@@ -248,7 +283,9 @@ export default function TopBar() {
                     <div className="flex w-full justify-start items-center gap-2 p-2 border-b ">
                       <div className="avatar placeholder">
                         <div className="bg-neutral-focus text-neutral-content rounded-full w-8">
-                          <span className="text-xs">{avatar}</span>
+                          <span className="text-xs">
+                            {getUserAvatar(userInformation.name)}
+                          </span>
                         </div>
                       </div>
                       <div className="font-medium text-sm">

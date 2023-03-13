@@ -29,7 +29,7 @@ export default async function handleAddItem(payload) {
     itemId: createdRecordItems.id,
     creatorId: payload.creatorId,
     closePrice: 0,
-    winnerId: null,
+    winnerOffer: null,
     timeStart: null,
     timeEnd: null,
     status: "Waiting",
@@ -39,7 +39,10 @@ export default async function handleAddItem(payload) {
     .collection("auctions")
     .create(auctionData);
 
+  // console.log(createdRecordAuction);
+
   if (createdRecordAuction?.code == 400) {
+    pb.collection("items").delete(createdRecordItems.id);
     return null;
   }
 

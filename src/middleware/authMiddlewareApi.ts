@@ -4,13 +4,13 @@ import jwt from "jsonwebtoken";
 const authMiddlewareApi =
   (handler: any) => async (req: NextApiRequest, res: NextApiResponse) => {
     const authHeader = req.headers.authorization;
-    console.log(req.query)
+    // console.log(req.query)
 
-    console.log("authHeader: ", authHeader);
+    // console.log("authHeader: ", authHeader);
 
     const token = authHeader && authHeader.split(" ")[1];
 
-    console.log("TOKEN: ", token);
+    // console.log("TOKEN: ", token);
 
     if (!token) {
       res.status(401).json({ message: "Unauthorized", status: 401 });

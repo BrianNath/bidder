@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
 import fetchApi from "@/utils/fetchApi";
-import dynamic from "next/dynamic";
 import handleAddItem from "@/lib/handleAddItem";
 import router from "next/router";
+import ProtectedRoute from "@/lib/ProtectedRoute";
+import dynamic from "next/dynamic";
 
 const RichTextEditor = dynamic(() => import("@/components/RichTextEditor"), {
   ssr: false,
@@ -34,7 +35,7 @@ export default function Sell() {
     const rawValue = event.target.value.replace(/[^\d]/g, "");
     const formattedValue = parseInt(rawValue).toLocaleString();
     setOpenPrice(formattedValue);
-    console.log(openPrice);
+    // console.log(openPrice);
   }
 
   async function handleSellItem(event) {
@@ -53,10 +54,10 @@ export default function Sell() {
       itemPicture: event.target.picture.files[0],
     };
 
-    console.log("BODY:", body);
+    // console.log("BODY:", body);
     const response = await handleAddItem(body);
 
-    console.log(response);
+    // console.log(response);
 
     if (response != null) {
       router.push("/item");
@@ -80,7 +81,7 @@ export default function Sell() {
 
   useEffect(() => {
     if (!localStorage.userData) {
-      return
+      return;
     } else {
       setUserData(JSON.parse(localStorage.userData));
     }
@@ -88,7 +89,7 @@ export default function Sell() {
   }, []);
 
   return (
-    <>
+    <ProtectedRoute requiredRole="sellItems">
       <div className="rounded-lg shadow p-5 bg-white">
         <h1 className="text-2xl font-semibold text-gray-500 mb-4">
           Jual Barang
@@ -200,8 +201,9 @@ export default function Sell() {
                 </label>
                 <input
                   type="range"
-                  min="0"
+                  min="1"
                   max="100"
+                  required
                   value={condition}
                   onChange={handleConditionChange}
                   className="range"
@@ -242,13 +244,11 @@ export default function Sell() {
               />
             </div>
             <div className="flex justify-end mt-4">
-              <button className={`btn mx-3 px-8 ${onLoading ? "loading" : ""}`}>
-                Kirim
-              </button>
+              <button className={`btn mx-3 px-8 `}>Kirim</button>
             </div>
           </form>
         </h1>
       </div>
-    </>
+    </ProtectedRoute>
   );
 }

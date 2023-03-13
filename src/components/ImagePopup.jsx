@@ -11,14 +11,14 @@ const ImagePopup = ({ imageUrl, onClose, isOpen }) => {
         exit={{ opacity: 0 }}
       >
         <motion.div
-          className="relative w-8/12 h-8/12"
+          className="relative w-8/12 h-8/12 max-h-screen max-w-2xl"
           initial={{ y: "100%" }}
           animate={{ y: 0 }}
           exit={{ y: "100%" }}
           transition={{ duration: 0.5, ease: "easeInOut" }}
         >
           <button
-            style={{ right:"0" }}
+            style={{ right: "0" }}
             className="absolute top-0 p-4 text-white"
             onClick={onClose}
           >
@@ -28,7 +28,7 @@ const ImagePopup = ({ imageUrl, onClose, isOpen }) => {
               viewBox="0 0 24 24"
               strokeWidth={1.5}
               stroke="currentColor"
-              className="w-8 h-8"
+              className="w-12 h-12"
             >
               <path
                 strokeLinecap="round"

@@ -27,27 +27,27 @@ export default async function fetchApi(payload: Payload) {
     referrerPolicy: "no-referrer",
   };
 
-  if (isMultipart) {
-    const formData = new FormData();
-    // console.log(Object.entries(body));
-    Object.entries(body).forEach(([key, value]) => {
-      if (Array.isArray(value)) {
-        value.forEach((file) => formData.append(key, file));
-      } else {
-        formData.append(key, value);
-      }
-      // console.log(`${key}, ${value}`);
-    });
-    requestOptions.body = formData;
-    requestOptions.headers["Content-Type"] = `multipart/form-data`;
-  } else {
+  // if (isMultipart) {
+  //   const formData = new FormData();
+  //   // console.log(Object.entries(body));
+  //   Object.entries(body).forEach(([key, value]) => {
+  //     if (Array.isArray(value)) {
+  //       value.forEach((file) => formData.append(key, file));
+  //     } else {
+  //       formData.append(key, value);
+  //     }
+  //     // console.log(`${key}, ${value}`);
+  //   });
+  //   requestOptions.body = formData;
+  //   requestOptions.headers["Content-Type"] = `multipart/form-data`;
+  // } else {
     requestOptions.headers["Content-Type"] = "application/json";
     if (method === "GET") {
       delete requestOptions.body;
     } else {
       requestOptions.body = JSON.stringify(body);
     }
-  }
+  // }
 
   // console.log("REQUEST OPTION :", requestOptions);
 

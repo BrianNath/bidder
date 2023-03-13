@@ -1,16 +1,18 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect } from "react";
-import { formatIDR } from "@/utils/numbering";
-import { timeAgo } from "@/utils/date";
 
-export default function OffersDialog({ isOpen, closeStateFunction, list }) {
+export default function ConfirmDeleteDialog({
+  isOpen,
+  message,
+  closeStateFunction,
+  functionHandler,
+}) {
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
     } else {
       document.body.style.overflow = "unset";
     }
-    // console.log("LIST: ", list);
   }, [isOpen]);
 
   return (
@@ -29,13 +31,13 @@ export default function OffersDialog({ isOpen, closeStateFunction, list }) {
             exit={{ opacity: 0 }}
           />
           <motion.div
-            className="relative bg-white mx-3 rounded-lg shadow-lg"
+            className="relative bg-white max-w-xl mx-3 rounded-lg shadow-lg"
             initial={{ translateY: 100, opacity: 0 }}
             animate={{ translateY: 0, opacity: 1 }}
             exit={{ translateY: 100, opacity: 0 }}
             transition={{ duration: 0.3 }}
           >
-            <div className="relative w-full h-full md:h-auto">
+            <div className="relative w-full h-full max-w-md md:h-auto">
               <div className="relative bg-white rounded-lg shadow dark:bg-gray-700">
                 <button
                   type="button"
@@ -55,38 +57,40 @@ export default function OffersDialog({ isOpen, closeStateFunction, list }) {
                       clipRule="evenodd"
                     ></path>
                   </svg>
+                  <span className="sr-only">Close modal</span>
                 </button>
-                <div className="p-8 min-w-max text-right">
-                  <div className="overflow-auto max-h-72 m-4">
-                    <table className="table w-full">
-                      <thead>
-                        <tr>
-                          <th></th>
-                          <th>Nama</th>
-                          <th>Harga Ditawarkan</th>
-                          <th>Waktu Penawaran</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {list.map((offer, index) => {
-                          return (
-                            <tr key={offer.id}>
-                              <td className="text-center">{index + 1}</td>
-                              <td>{offer.name}</td>
-                              <td>{formatIDR(offer.priceOffered)}</td>
-                              <td>{timeAgo(offer.offeredTime)}</td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
+                <div className="p-6 text-center">
+                  <svg
+                    aria-hidden="true"
+                    className="mx-auto mb-4 text-gray-400 w-14 h-14 dark:text-gray-200"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    ></path>
+                  </svg>
+                  <h3 className="mb-5 text-lg font-normal text-gray-500 dark:text-gray-400">
+                    {message}
+                  </h3>
+                  <button
+                    onClick={functionHandler}
+                    type="button"
+                    className="text-white bg-red-600 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-red-300 dark:focus:ring-red-800 font-medium rounded-lg text-sm inline-flex items-center px-5 py-2.5 text-center mr-2"
+                  >
+                    Yes, I'm sure
+                  </button>
                   <button
                     onClick={closeStateFunction}
                     type="button"
-                    className="text-gray-500 mt-4 bg-white hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-gray-200 rounded-lg border border-gray-200 text-sm font-medium px-5 py-2.5 hover:text-gray-900 focus:z-10 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-500 dark:hover:text-white dark:hover:bg-gray-600 dark:focus:ring-gray-600"
+                    className="text-gray-500 bg-white hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-gray-200 rounded-lg border border-gray-200 text-sm font-medium px-5 py-2.5 hover:text-gray-900 focus:z-10 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-500 dark:hover:text-white dark:hover:bg-gray-600 dark:focus:ring-gray-600"
                   >
-                    OK
+                    No, cancel
                   </button>
                 </div>
               </div>

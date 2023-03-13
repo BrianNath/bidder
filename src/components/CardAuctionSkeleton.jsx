@@ -2,7 +2,7 @@ export default function CardAuctionSkeleton() {
   return (
     <div
       role="status"
-      className="border border-gray-200 rounded-md shadow-lg animate-pulse dark:border-gray-700"
+      className="rounded-md shadow-lg animate-pulse dark:border-gray-700"
     >
       <div className="flex items-center justify-center h-48 mb-4 bg-gray-300 rounded-t-md dark:bg-gray-700">
         <svg

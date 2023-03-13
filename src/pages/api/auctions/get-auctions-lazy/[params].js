@@ -2,14 +2,17 @@ import pb from "@/lib/pocketbase";
 import authMiddlewareApi from "@/middleware/authMiddlewareApi";
 
 async function getAuctionsLazy(req, res) {
-  console.log("req:", req);
-  const { params } = req.query;
+  // console.log("req:", req);
+  const { params, status } = req.query;
   const [offset, limit] = params.split(".");
-  console.log("PARAMS:", params);
+  // console.log("PARAMS:", params);
+  const statusFilter = status ? `status = '${status}'` : "";
+  console.log(statusFilter)
   try {
     const record = await pb.collection("auctions").getList(offset, limit, {
-      filter: "",
+      filter: `${statusFilter}`,
       expand: "creatorId,itemId,itemId.categoryId",
+      sort:"-created"
     });
 
     if (record) {
