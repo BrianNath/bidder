@@ -241,7 +241,7 @@ export default function Sell() {
                 >
                   Mulai Lelang
                 </label>
-                <Calendar date={calendar} setDate={setCalendar} styleClass="text-lg border p-3 showIcon" />
+                <Calendar date={calendar} setDate={setCalendar} styleClass="text-lg border p-3 " />
               </div>
             </div>
             <div className="mt-4">
